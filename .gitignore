@@ -1,0 +1,6 @@
+.env
+old_commands
+node_modules
+logs/*
+config.js
+package-lock.json
