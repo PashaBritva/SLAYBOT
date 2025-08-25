@@ -55,6 +55,10 @@ const Schema = mongoose.Schema({
     max_role_mentions: Number,
     max_lines: Number,
   },
+  inviteUrl: {
+    type: String,
+    default: null
+  },
   invite: {
     tracking: Boolean,
     ranks: [
@@ -114,7 +118,10 @@ const Schema = mongoose.Schema({
       footer: String,
     },
   },
-  autorole: String,
+  autorole: {
+    type: [String],
+    default: [],
+  }
 });
 
 const Model = mongoose.model("guild", Schema);

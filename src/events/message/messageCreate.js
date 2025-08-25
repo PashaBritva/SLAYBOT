@@ -11,7 +11,6 @@ module.exports = async (client, message) => {
   const settings = await getSettings(message.guild);
   const { prefix } = settings;
 
-  // check for bot mentions
   if (message.content.includes(`${client.user.id}`)) {
     sendMessage(message.channel, `Hello and thank you for using ${client.user.username}!
 
@@ -28,14 +27,12 @@ A good command to **get started** is \`${settings.prefix}help\``);
     const invoke = args.shift().toLowerCase();
     const cmd = client.getCommand(invoke);
 
-    // command is found
     if (cmd) {
       isCommand = true;
       cmd.executeCommand(message, args, invoke, prefix);
     }
   }
 
-  // if not a command
   if (!isCommand) {
     await automodHandler.performAutomod(message, settings);
     if (settings.ranking.enabled) xpHandler.handleXp(message);

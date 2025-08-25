@@ -49,16 +49,16 @@ module.exports = {
     image: "https://icons.iconarchive.com/icons/lawyerwordpress/law/128/Gavel-Law-icon.png",
     emoji: "🔨",
   },
-  // MUSIC: {
-  //   name: "Music",
-  //   image: "https://icons.iconarchive.com/icons/wwalczyszyn/iwindows/256/Music-Library-icon.png",
-  //   emoji: "🎵",
-  // },
-  // OWNER: {
-  //   name: "Owner",
-  //   image: "https://www.pinclipart.com/picdir/middle/531-5318253_web-designing-icon-png-clipart.png",
-  //   emoji: "🤴",
-  // },
+  MUSIC: {
+    name: "Music",
+    image: "https://icons.iconarchive.com/icons/wwalczyszyn/iwindows/256/Music-Library-icon.png",
+    emoji: "🎵",
+  },
+  OWNER: {
+    name: "Owner",
+    image: "https://www.pinclipart.com/picdir/middle/531-5318253_web-designing-icon-png-clipart.png",
+    emoji: "🤴",
+  },
   SOCIAL: {
     name: "Social",
     image: "https://icons.iconarchive.com/icons/dryicons/aesthetica-2/128/community-users-icon.png",

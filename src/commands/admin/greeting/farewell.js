@@ -314,7 +314,11 @@ async function setColor(settings, color) {
 }
 
 async function setFooter(settings, content) {
-  settings.farewell.embed.footer = content;
+  if (content === "null") {
+    settings.farewell.embed.footer = "";
+  } else {
+    settings.farewell.embed.footer = content;
+  }
   await settings.save();
   return "Configuration saved! Farewell message updated";
 }

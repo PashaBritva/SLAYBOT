@@ -222,10 +222,26 @@ class Command {
 
     try {
       await interaction.deferReply({ ephemeral: this.slashCommand.ephemeral });
+
       await this.interactionRun(interaction);
     } catch (ex) {
-      await interaction.followUp("Oops! An error occurred while running the command");
       this.client.logger.error("interactionRun", ex);
+
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({
+            content: "Oops! An error occurred while running the command",
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({
+            content: "Oops! An error occurred while running the command",
+            ephemeral: true,
+          });
+        }
+      } catch (followUpError) {
+        this.client.logger.error("followUpError", followUpError);
+      }
     } finally {
       this.applyCooldown(interaction.user.id);
     }

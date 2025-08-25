@@ -1,16 +1,16 @@
-// src/commands/admin/block-server.js
 const { Command } = require("@src/structures");
 const { Message, CommandInteraction } = require("discord.js");
-const BlockedServer = require("@models/BlockedServer");
+const BlockedServer = require("@schemas/BlockedServer");
 const { EMBED_COLORS } = require("@root/config");
+const { OWNER_IDS } = require("@root/config");
 const timeUtils = require("@utils/timeUtils");
 
 module.exports = class BlockServerCommand extends Command {
   constructor(client) {
     super(client, {
-      name: "block-server",
+      name: "blockserver",
       description: "managing the list of blocked servers",
-      category: "ADMIN",
+      category: "OWNER",
       botPermissions: ["EMBED_LINKS"],
       userPermissions: ["ADMINISTRATOR"],
       command: {
@@ -49,7 +49,15 @@ module.exports = class BlockServerCommand extends Command {
                 name: "duration",
                 description: "duration of the lock (1d, 2h, 30m)",
                 type: "STRING",
-                required: false
+                required: false,
+                choices: [
+                  { name: "1 hour", value: "1h" },
+                  { name: "6 hours", value: "6h" },
+                  { name: "1 day", value: "1d" },
+                  { name: "7 days", value: "7d" },
+                  { name: "30 days", value: "30d" },
+                  { name: "Forever", value: "forever" }
+                ]
               },
               {
                 name: "reason",
@@ -107,6 +115,13 @@ module.exports = class BlockServerCommand extends Command {
    * @param {string[]} args
    */
   async messageRun(message, args) {
+    if (!OWNER_IDS.includes(message.author.id)) {
+      return message.reply({
+        content: "❌ This command is only available to the bot owner.",
+        allowedMentions: { repliedUser: false }
+      });
+    }
+
     const sub = args[0].toLowerCase();
     const response = await this.handleCommand(sub, args.slice(1), message.author, message);
     await message.reply(response);
@@ -116,6 +131,13 @@ module.exports = class BlockServerCommand extends Command {
    * @param {CommandInteraction} interaction
    */
   async interactionRun(interaction) {
+    if (!OWNER_IDS.includes(interaction.user.id)) {
+      return interaction.reply({
+        content: "❌ This command is only available to the bot owner.",
+        ephemeral: true
+      });
+    }
+
     const sub = interaction.options.getSubcommand();
     const serverId = interaction.options.getString("server");
     const duration = interaction.options.getString("duration");
@@ -130,7 +152,20 @@ module.exports = class BlockServerCommand extends Command {
     try {
       switch (sub) {
         case "add":
-          return await this.addServer(user, args[0], args[1], args.slice(2).join(" "), context.client);
+          const serverId = args[0];
+          const durationStr = args[1]?.toLowerCase();
+          const reason = args.slice(2).join(" ");
+
+          let duration = 0;
+          let isPermanent = true;
+
+          if (durationStr && durationStr !== "forever") {
+            duration = timeUtils.parseDuration(durationStr);
+            if (duration === 0) return "❌ Incorrect duration format. Use: 1d, 2h, 30m, or 'forever'";
+            isPermanent = false;
+          }
+
+          return await this.addServer(user, serverId, duration, isPermanent, reason, context.client);
         case "remove":
           return await this.removeServer(args[0], context.client);
         case "list":
@@ -144,43 +179,25 @@ module.exports = class BlockServerCommand extends Command {
     }
   }
 
-  async addServer(user, serverId, durationStr, reason, client) {
-    if (!serverId || serverId.length !== 18 || !/^\d+$/.test(serverId)) {
-      return "❌ Specify the correct server ID (18 digits)";
-    }
-
+  async addServer(user, serverId, duration, isPermanent, reason, client) {
     const existing = await BlockedServer.findOne({ serverId });
     if (existing) return `❌ Server \`${serverId}\` already blocked`;
 
-    let duration = 0;
-    let isPermanent = true;
-    
-    if (durationStr) {
-      duration = timeUtils.parseDuration(durationStr);
-      if (duration === 0) return "❌ Incorrect duration format. Use: 1d, 2h, 30m";
-      isPermanent = false;
-    }
+    const blockedAt = new Date();
+    const expiresAt = isPermanent ? null : new Date(blockedAt.getTime() + duration);
 
     const blockedServer = new BlockedServer({
       serverId,
       reason: reason || "Not specified",
       blockedBy: user.id,
-      blockedAt: new Date(),
-      duration,
-      isPermanent
+      blockedAt,
+      duration: isPermanent ? 0 : duration,
+      isPermanent,
+      expiresAt
     });
 
     await blockedServer.save();
     client.blockedServers.push(serverId);
-
-    // const guild = client.guilds.cache.get(serverId);
-    // if (guild) {
-    //   try {
-    //     await guild.leave();
-    //   } catch (ex) {
-    //     client.logger.error(`Couldn't leave the server ${guild.name}`, ex);
-    //   }
-    // }
 
     if (!isPermanent) {
       setTimeout(async () => {
@@ -190,16 +207,21 @@ module.exports = class BlockServerCommand extends Command {
       }, duration);
     }
 
-    return `✅ Server \`${serverId}\` blocked ${
-      isPermanent ? "forever" : `for ${timeUtils.formatDuration(duration)}`
-    }${reason ? `. Reason: ${reason}` : ''}`;
+    const { MessageEmbed } = require("discord.js");
+    const embed = new MessageEmbed()
+      .setTitle("🚫 Server Blocked")
+      .setColor(isPermanent ? "#FF4444" : "#FFA500")
+      .setDescription("Server has been successfully added to the blacklist")
+      .addField("Server ID", `\`${serverId}\``, true)
+      .addField("Status", isPermanent ? "**Forever**" : `**${timeUtils.formatDuration(duration)}**`, true)
+      .addField("Reason", reason || "Not specified", false)
+      .setFooter({ text: `Blocked by ${user.tag}` })
+      .setTimestamp();
+
+    return { embeds: [embed] };
   }
 
   async removeServer(serverId, client) {
-    if (!serverId || serverId.length !== 18 || !/^\d+$/.test(serverId)) {
-      return "❌ Specify the correct server ID (18 digits)";
-    }
-
     const result = await BlockedServer.deleteOne({ serverId });
     if (result.deletedCount === 0) return `❌ The server \`${serverId}\` was not found in the list`;
 

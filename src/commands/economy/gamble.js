@@ -56,25 +56,25 @@ function getEmoji() {
   const ran = getRandomInt(9);
   switch (ran) {
     case 1:
-      return "\uD83C\uDF52";
+      return "\uD83C\uDF52"; // 🍒
     case 2:
-      return "\uD83C\uDF4C";
+      return "\uD83C\uDF4C"; // 🍌
     case 3:
-      return "\uD83C\uDF51";
+      return "\uD83C\uDF51"; // 🍑
     case 4:
-      return "\uD83C\uDF45";
+      return "\uD83C\uDF45"; // 🍅
     case 5:
-      return "\uD83C\uDF49";
+      return "\uD83C\uDF49"; // 🍩
     case 6:
-      return "\uD83C\uDF47";
+      return "\uD83C\uDF47"; // 🍇
     case 7:
-      return "\uD83C\uDF53";
+      return "\uD83C\uDF53"; // 🍓
     case 8:
-      return "\uD83C\uDF50";
+      return "\uD83C\uDF50"; // 🍐
     case 9:
-      return "\uD83C\uDF4D";
+      return "\uD83C\uDF4D"; // 🍍
     default:
-      return "\uD83C\uDF52";
+      return "\uD83C\uDF52"; // 🍒
   }
 }
 
@@ -100,13 +100,13 @@ async function gamble(user, betAmount) {
   const str = `
     **Gamble Amount:** ${betAmount}${ECONOMY.CURRENCY}
     **Multiplier:** 2x
-    ╔══════════╗
-    ║ ${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()} ‎‎‎‎║
-    ╠══════════╣
-    ║ ${slot1} ║ ${slot2} ║ ${slot3} ⟸
-    ╠══════════╣
-    ║ ${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()} ║
-    ╚══════════╝
+    ╔═════════╗
+    ║${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()}║
+    ╠═════════╣
+    ║${slot1} ║ ${slot2} ║ ${slot3}  ⟸
+    ╠═════════╣
+    ║${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()}║
+    ╚═════════╝
     `;
 
   const reward = calculateReward(betAmount, slot1, slot2, slot3);

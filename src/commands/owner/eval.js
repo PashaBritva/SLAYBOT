@@ -6,7 +6,7 @@ module.exports = class Eval extends Command {
   constructor(client) {
     super(client, {
       name: "eval",
-      description: "evaluates something",
+      description: "Evaluates JavaScript code",
       category: "OWNER",
       botPermissions: ["EMBED_LINKS"],
       command: {
@@ -18,8 +18,8 @@ module.exports = class Eval extends Command {
         enabled: true,
         options: [
           {
-            name: "input",
-            description: "content to eval",
+            name: "code",
+            description: "Code to evaluate",
             type: "STRING",
             required: true,
           },
@@ -33,10 +33,19 @@ module.exports = class Eval extends Command {
    * @param {string[]} args
    */
   async messageRun(message, args) {
+    if (!this.client.config.OWNER_IDS.includes(message.author.id)) {
+      return message.reply("❌ You don't have permission to use this command!");
+    }
+
     const input = args.join(" ");
 
     if (!input) return message.reply("Please provide code to eval");
-    if (input.toLowerCase().includes("token")) return message.reply("Don't try to hack me!");
+    
+    if (input.toLowerCase().includes("token") || 
+        input.includes(process.env.BOT_TOKEN) ||
+        input.includes("process.env")) {
+      return message.reply("❌ Don't try to hack me!");
+    }
 
     let response;
     try {
@@ -52,8 +61,17 @@ module.exports = class Eval extends Command {
    * @param {CommandInteraction} interaction
    */
   async interactionRun(interaction) {
-    const input = interaction.options.getString("expression");
-    if (input.toLowerCase().includes("token")) return interaction.followUp("Don't try to hack me!");
+    if (!this.client.config.OWNER_IDS.includes(interaction.user.id)) {
+      return interaction.followUp("❌ You don't have permission to use this command!");
+    }
+
+    const input = interaction.options.getString("code");
+    
+    if (input.toLowerCase().includes("token") || 
+        input.includes(process.env.BOT_TOKEN) ||
+        input.includes("process.env")) {
+      return interaction.followUp("❌ Don't try to hack me!");
+    }
 
     let response;
     try {
@@ -68,24 +86,38 @@ module.exports = class Eval extends Command {
 
 const buildSuccessResponse = (output) => {
   const embed = new MessageEmbed();
-  if (typeof output !== "string") output = require("util").inspect(output, { depth: 0 });
+  
+  let outputStr;
+  if (typeof output === "string") {
+    outputStr = output;
+  } else {
+    outputStr = require("util").inspect(output, { depth: 0, maxArrayLength: 100 });
+  }
 
   embed
     .setAuthor({ name: "📤 Output" })
-    .setDescription("```js\n" + (output.length > 4096 ? `${output.substr(0, 4000)}...` : output) + "\n```")
-    .setColor("RANDOM")
-    .setTimestamp(Date.now());
+    .setDescription("```js\n" + (outputStr.length > 4096 ? `${outputStr.substring(0, 4000)}...` : outputStr) + "\n```")
+    .setColor("GREEN")
+    .setTimestamp();
 
   return { embeds: [embed] };
 };
 
 const buildErrorResponse = (err) => {
   const embed = new MessageEmbed();
+  
+  let errStr;
+  if (typeof err === "string") {
+    errStr = err;
+  } else {
+    errStr = require("util").inspect(err, { depth: 0 });
+  }
+
   embed
     .setAuthor({ name: "📤 Error" })
-    .setDescription("```js\n" + (err.length > 4096 ? `${err.substr(0, 4000)}...` : err) + "\n```")
+    .setDescription("```js\n" + (errStr.length > 4096 ? `${errStr.substring(0, 4000)}...` : errStr) + "\n```")
     .setColor(EMBED_COLORS.ERROR)
-    .setTimestamp(Date.now());
+    .setTimestamp();
 
   return { embeds: [embed] };
 };
