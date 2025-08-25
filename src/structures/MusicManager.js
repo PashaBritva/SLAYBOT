@@ -7,7 +7,6 @@ module.exports = class MusicManager extends Manager {
       nodes: MUSIC.NODES,
       autoPlay: true,
       
-      // Use YouTube as the primary source
       defaultSearchPlatform: "youtube",
       
       send: (id, payload) => {
