@@ -41,15 +41,7 @@ module.exports = class BankCommand extends Command {
           {
             name: "balance",
             description: "check your coin balance",
-            type: "SUB_COMMAND",
-            options: [
-              {
-                name: "user",
-                description: "name of the user",
-                type: "USER",
-                required: false,
-              },
-            ],
+            type: "SUB_COMMAND"
           },
           {
             name: "deposit",

@@ -127,10 +127,18 @@ const Schema = mongoose.Schema({
 const Model = mongoose.model("guild", Schema);
 
 module.exports = {
+  /**
+   * Получает настройки сервера
+   * @param {Guild} guild - Discord Guild object
+   * @returns {Promise<mongoose.Document>}
+   */
   getSettings: async (guild) => {
-    if (cache.contains(guild.id)) return cache.get(guild.id);
+    if (!guild?.id) {
+      throw new Error("Guild or Guild ID is undefined");
+    }
 
     let guildData = await Model.findOne({ _id: guild.id });
+
     if (!guildData) {
       guildData = new Model({
         _id: guild.id,
@@ -139,19 +147,21 @@ module.exports = {
           region: guild.preferredLocale,
           owner: {
             id: guild.ownerId,
-            tag: guild.members.cache.get(guild.ownerId)?.user.tag,
+            tag: guild.members.cache.get(guild.ownerId)?.user?.tag || null,
           },
           joinedAt: guild.joinedAt,
         },
       });
 
-      if (!guild.id) {
-        throw new Error("Guild ID is undefined");
-      }
-
       await guildData.save();
     }
-    cache.add(guild.id, guildData);
+
+    cache.set(guild.id, guildData);
+
     return guildData;
+  },
+
+  getSettingsCached: (guildId) => {
+    return cache.get(guildId) || null;
   },
 };

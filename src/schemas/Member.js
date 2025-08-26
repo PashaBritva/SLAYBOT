@@ -44,11 +44,21 @@ const Schema = mongoose.Schema({
 const Model = mongoose.model("members", Schema);
 
 module.exports = {
+  /**
+   * Получает данные участника
+   * @param {string} guildId
+   * @param {string} memberId
+   * @returns {Promise<mongoose.Document>}
+   */
   getMember: async (guildId, memberId) => {
+    if (!guildId || !memberId) {
+      throw new Error("guildId and memberId are required");
+    }
+
     const key = `${guildId}|${memberId}`;
-    if (cache.contains(key)) return cache.get(key);
 
     let member = await Model.findOne({ guild_id: guildId, member_id: memberId });
+
     if (!member) {
       member = new Model({
         guild_id: guildId,
@@ -56,18 +66,28 @@ module.exports = {
       });
     }
 
-    cache.add(key, member);
+    cache.set(key, member);
+
     return member;
   },
 
+  getMemberCached: (guildId, memberId) => {
+    const key = `${guildId}|${memberId}`;
+    return cache.get(key) || null;
+  },
+
+  /**
+   * Топ по XP
+   */
   getXpLb: async (guildId, limit = 10) =>
-    Model.find({
-      guild_id: guildId,
-    })
+    Model.find({ guild_id: guildId })
       .limit(limit)
       .sort({ level: -1, xp: -1 })
       .lean(),
 
+  /**
+   * Топ по приглашениям
+   */
   getInvitesLb: async (guildId, limit = 10) =>
     Model.aggregate([
       { $match: { guild_id: guildId } },

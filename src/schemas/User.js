@@ -43,14 +43,24 @@ const Schema = mongoose.Schema({
 const Model = mongoose.model("user", Schema);
 
 module.exports = {
+  /**
+   * Получает пользователя из базы
+   * @param {string} userId
+   * @returns {Promise<mongoose.Document>}
+   */
   getUser: async (userId) => {
-    const cached = cache.get(userId);
-    if (cached) return cached;
-
     let user = await Model.findById(userId);
-    if (!user) user = new Model({ _id: userId });
 
-    cache.add(userId, user);
+    if (!user) {
+      user = new Model({ _id: userId });
+    }
+
+    cache.set(userId, user);
+
     return user;
+  },
+
+  getUserCached: (userId) => {
+    return cache.get(userId) || null;
   },
 };
