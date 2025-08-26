@@ -55,7 +55,7 @@ module.exports = {
       user = new Model({ _id: userId });
     }
 
-    cache.set(userId, user);
+    cache.add(userId, user);
 
     return user;
   },

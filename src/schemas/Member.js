@@ -66,7 +66,7 @@ module.exports = {
       });
     }
 
-    cache.set(key, member);
+    cache.add(key, member);
 
     return member;
   },

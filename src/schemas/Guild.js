@@ -156,7 +156,7 @@ module.exports = {
       await guildData.save();
     }
 
-    cache.set(guild.id, guildData);
+    cache.add(guild.id, guildData);
 
     return guildData;
   },
