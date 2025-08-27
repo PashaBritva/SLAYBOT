@@ -171,9 +171,10 @@ class Command {
    * @param {import('discord.js').CommandInteraction} interaction
    */
   async executeInteraction(interaction) {
-    // callback validations
+    // Validation checks
     for (const validation of this.validations) {
       if (!validation.callback(interaction)) {
+        this.client.logger.warn(`Validation failed: ${validation.message}`);
         return interaction.reply({
           content: validation.message,
           ephemeral: true,
@@ -181,7 +182,7 @@ class Command {
       }
     }
 
-    // Owner commands
+    // Owner-only commands
     if (this.category === "OWNER" && !OWNER_IDS.includes(interaction.user.id)) {
       return interaction.reply({
         content: `This command is only accessible to bot owners`,
@@ -189,19 +190,10 @@ class Command {
       });
     }
 
-    // user permissions
-    if (interaction.member && this.userPermissions.length > 0) {
-      if (!interaction.member.permissions.has(this.userPermissions)) {
-        return interaction.reply({
-          content: `You need ${parsePermissions(this.userPermissions)} for this command`,
-          ephemeral: true,
-        });
-      }
-    }
-
-    // bot permissions
+    // Bot permissions
     if (this.botPermissions.length > 0) {
-      if (!interaction.guild.me.permissions.has(this.botPermissions)) {
+      const botPerms = interaction.guild.me.permissions;
+      if (!botPerms.has(this.botPermissions)) {
         return interaction.reply({
           content: `I need ${parsePermissions(this.botPermissions)} for this command`,
           ephemeral: true,
@@ -209,40 +201,54 @@ class Command {
       }
     }
 
-    // cooldown check
+    // User permissions
+    if (this.userPermissions.length > 0) {
+      const memberPerms = interaction.member.permissions;
+      if (!memberPerms.has(this.userPermissions)) {
+        return interaction.reply({
+          content: `You need ${parsePermissions(this.userPermissions)} for this command`,
+          ephemeral: true,
+        });
+      }
+    }
+
+    // Cooldown check
     if (this.cooldown > 0) {
       const remaining = this.getRemainingCooldown(interaction.user.id);
       if (remaining > 0) {
         return interaction.reply({
-          content: `You are on cooldown. You can again use the command in \`${timeformat(remaining)}\``,
+          content: `You are on cooldown. You can use the command again in \`${timeformat(remaining)}\``,
           ephemeral: true,
         });
       }
     }
 
     try {
-      await interaction.deferReply({ ephemeral: this.slashCommand.ephemeral });
+      // Defer reply with a timeout check
+      const ephemeral = this.slashCommand?.ephemeral ?? false;
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.deferReply({ ephemeral });
+      }
 
+      // Execute the command logic
       await this.interactionRun(interaction);
     } catch (ex) {
       this.client.logger.error("interactionRun", ex);
 
+      const errorMessage = ex instanceof Error ? ex.message : "An unexpected error occurred.";
+      const content = `Oops! ${errorMessage}`;
+
       try {
         if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({
-            content: "Oops! An error occurred while running the command",
-            ephemeral: true,
-          });
+          await interaction.followUp({ content, ephemeral: true });
         } else {
-          await interaction.reply({
-            content: "Oops! An error occurred while running the command",
-            ephemeral: true,
-          });
+          await interaction.reply({ content, ephemeral: true });
         }
       } catch (followUpError) {
         this.client.logger.error("followUpError", followUpError);
       }
     } finally {
+      // Apply cooldown after execution
       this.applyCooldown(interaction.user.id);
     }
   }
