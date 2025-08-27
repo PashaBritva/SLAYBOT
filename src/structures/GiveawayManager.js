@@ -2,7 +2,6 @@ const { GiveawaysManager } = require("discord-giveaways");
 const Model = require("@schemas/Giveaways");
 const { EMBED_COLORS } = require("@root/config");
 
-// Explanation at: https://github.com/Androz2091/discord-giveaways/blob/master/examples/custom-databases/mongoose.js
 module.exports = class extends GiveawaysManager {
   constructor(client) {
     super(client, {

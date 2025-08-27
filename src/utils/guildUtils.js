@@ -111,26 +111,22 @@ async function resolveMember(message, query, exact = false) {
   if (!message || !query || typeof query !== "string") return;
   const memberManager = message.guild.members;
 
-  // Check if mentioned or ID is passed
   const patternMatch = query.match(MEMBER_MENTION);
   if (patternMatch) {
     const id = patternMatch[1];
 
-    const mentioned = message.mentions.members.find((m) => m.id === id); // check if mentions contains the ID
+    const mentioned = message.mentions.members.find((m) => m.id === id);
     if (mentioned) return mentioned;
 
     const fetched = await memberManager.fetch({ user: id }).catch(() => {});
     if (fetched) return fetched;
   }
 
-  // Fetch and cache members from API
   await memberManager.fetch({ query }).catch(() => {});
 
-  // Check if exact tag is matched
   const matchingTags = memberManager.cache.filter((mem) => mem.user.tag === query);
   if (matchingTags.size === 1) return matchingTags.first();
 
-  // Check for matching username
   if (!exact) {
     return memberManager.cache.find(
       (x) =>

@@ -128,7 +128,7 @@ const Model = mongoose.model("guild", Schema);
 
 module.exports = {
   /**
-   * Получает настройки сервера
+   * Gets the server settings
    * @param {Guild} guild - Discord Guild object
    * @returns {Promise<mongoose.Document>}
    */

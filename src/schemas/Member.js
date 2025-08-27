@@ -45,7 +45,7 @@ const Model = mongoose.model("members", Schema);
 
 module.exports = {
   /**
-   * Получает данные участника
+   * Gets the participant's data
    * @param {string} guildId
    * @param {string} memberId
    * @returns {Promise<mongoose.Document>}
@@ -77,7 +77,7 @@ module.exports = {
   },
 
   /**
-   * Топ по XP
+   * Top by XP
    */
   getXpLb: async (guildId, limit = 10) =>
     Model.find({ guild_id: guildId })
@@ -86,7 +86,7 @@ module.exports = {
       .lean(),
 
   /**
-   * Топ по приглашениям
+   * Top by Invitation
    */
   getInvitesLb: async (guildId, limit = 10) =>
     Model.aggregate([

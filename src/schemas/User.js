@@ -44,7 +44,7 @@ const Model = mongoose.model("user", Schema);
 
 module.exports = {
   /**
-   * Получает пользователя из базы
+   * Retrieves the user from the database
    * @param {string} userId
    * @returns {Promise<mongoose.Document>}
    */

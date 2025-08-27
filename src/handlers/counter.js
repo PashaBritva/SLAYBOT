@@ -24,15 +24,21 @@ async function updateCounterChannels(client) {
 
         let channelName;
         if (config.counter_type.toUpperCase() === "USERS") channelName = `${config.name} : ${all}`;
-        if (config.counter_type.toUpperCase() === "MEMBERS") channelName = `${config.name} : ${members}`;
-        if (config.counter_type.toUpperCase() === "BOTS") channelName = `${config.name} : ${bots}`;
+        else if (config.counter_type.toUpperCase() === "MEMBERS") channelName = `${config.name} : ${members}`;
+        else if (config.counter_type.toUpperCase() === "BOTS") channelName = `${config.name} : ${bots}`;
+        else if (config.counter_type.toUpperCase() === "ROLE" && config.role_id) {
+          const role = guild.roles.cache.get(config.role_id);
+          if (role) {
+            const roleCount = guild.members.cache.filter((member) => member.roles.cache.has(role.id)).size;
+            channelName = `${config.name} : ${roleCount}`;
+          }
+        }
 
-        setVoiceChannelName(vc, channelName);
+        if (channelName) setVoiceChannelName(vc, channelName);
       }
     } catch (ex) {
       client.logger.error(`Error updating counter channels for guildId: ${guildId}`, ex);
     } finally {
-      // remove guildId from cache
       const i = client.counterUpdateQueue.indexOf(guild.id);
       if (i > -1) client.counterUpdateQueue.splice(i, 1);
     }
