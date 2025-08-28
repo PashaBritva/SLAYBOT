@@ -20,6 +20,12 @@ const Schema = mongoose.Schema({
     type: Number,
     default: 0,
   },
+  inventory: [{
+    name: String,
+    type: { type: String, enum: ["custom", "role"], default: "custom" },
+    roleId: String,
+    purchasedAt: { type: Date, default: Date.now }
+  }],
   reputation: {
     received: {
       type: Number,

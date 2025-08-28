@@ -16,7 +16,6 @@ module.exports = async (client, message) => {
 
 Here is some important information:
 • Prefix: \`${settings.prefix}\`
-• Serverprefix: \`<Coming Soon>\`
 
 A good command to **get started** is \`${settings.prefix}help\``);
   }
