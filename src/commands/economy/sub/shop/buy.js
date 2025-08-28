@@ -17,7 +17,6 @@ module.exports = async function buy(guildId, user, name) {
   }
 
   shop.balance = (shop.balance || 0) + item.price;
-  console.log(shop.balance)
   await shop.save();
 
   const userDoc = await getUser(user.id);
