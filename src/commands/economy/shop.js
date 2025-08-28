@@ -75,6 +75,10 @@ module.exports = class ShopCommand extends Command {
     const sub = args[0];
     let response;
 
+    if ((sub === "additem" || sub === "removeitem") && !message.member.permissions.has("ADMINISTRATOR")) {
+      return this.errorEmbed("You need administrator permissions to use this command", message);
+    }
+
     if (sub === "additem") {
       if (args.length < 3) 
         return this.errorEmbed("You must provide an item name and price", message);
