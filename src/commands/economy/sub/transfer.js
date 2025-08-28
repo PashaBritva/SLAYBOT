@@ -1,33 +1,111 @@
 const { MessageEmbed } = require("discord.js");
 const { getUser } = require("@schemas/User");
+const ServerShop = require("@schemas/Shop");
 const { ECONOMY, EMBED_COLORS } = require("@root/config");
 
-module.exports = async (self, target, coins) => {
-  if (isNaN(coins) || coins <= 0) return "Please enter a valid amount of coins to transfer";
-  if (target.bot) return "You cannot transfer coins to bots!";
-  if (target.id === self.id) return "You cannot transfer coins to self!";
-
-  const userDb = await getUser(self.id);
-
-  if (userDb.bank < coins) {
-    return `Insufficient bank balance! You only have ${userDb.bank}${ECONOMY.CURRENCY} in your bank account.${
-      userDb.coins > 0 && "\nYou must deposit your coins in bank before you can transfer"
-    } `;
+module.exports = async (self, target, coins, shopId = null) => {
+  const amount = Number(coins);
+  if (isNaN(amount) || amount <= 0) {
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("❌ Error")
+          .setDescription("Please enter a valid amount of coins to transfer.")
+          .setTimestamp(),
+      ],
+    };
   }
 
-  const targetDb = await getUser(target.id);
+  const targetId = target?.id ?? target?.user?.id ?? null;
+  const targetTag = target?.tag ?? target?.user?.tag ?? target?.username ?? "target";
+  const targetIsBot = !!(target?.bot || target?.user?.bot);
 
-  userDb.bank -= coins;
-  targetDb.bank += coins;
+  if (!targetId && !shopId) {
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("❌ Error")
+          .setDescription("Invalid target provided.")
+          .setTimestamp(),
+      ],
+    };
+  }
+
+  if (targetIsBot && !shopId) {
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("❌ Error")
+          .setDescription("You cannot transfer coins to bots!")
+          .setTimestamp(),
+      ],
+    };
+  }
+
+  if (targetId && targetId === self.id) {
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("❌ Error")
+          .setDescription("You cannot transfer coins to yourself!")
+          .setTimestamp(),
+      ],
+    };
+  }
+
+  const userDb = await getUser(self.id);
+  if ((userDb.bank || 0) < amount) {
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("❌ Insufficient Funds")
+          .setDescription(
+            `Insufficient bank balance! You only have ${userDb.bank || 0}${ECONOMY.CURRENCY} in your bank account.`
+          )
+          .setTimestamp(),
+      ],
+    };
+  }
+
+  userDb.bank -= amount;
+
+  if (shopId) {
+    let shop = await ServerShop.findOne({ guildId: shopId });
+    if (!shop) shop = new ServerShop({ guildId: shopId, items: [], bank: 0 });
+    shop.bank += amount;
+
+    await userDb.save();
+    await shop.save();
+
+    return {
+      embeds: [
+        new MessageEmbed()
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setTitle("✅ Transfer Successful")
+          .setDescription(`You have successfully transferred ${amount}${ECONOMY.CURRENCY} to the server shop.`)
+          .setTimestamp(),
+      ],
+    };
+  }
+
+  const targetDb = await getUser(targetId);
+  targetDb.bank = (targetDb.bank || 0) + amount;
 
   await userDb.save();
   await targetDb.save();
 
-  const embed = new MessageEmbed()
-    .setColor(EMBED_COLORS.BOT_EMBED)
-    .setAuthor({ name: "Updated Balance" })
-    .setDescription(`You have successfully transferred ${coins}${ECONOMY.CURRENCY} to ${target.tag}`)
-    .setTimestamp(Date.now());
-
-  return { embeds: [embed] };
+  return {
+    embeds: [
+      new MessageEmbed()
+        .setColor(EMBED_COLORS.BOT_EMBED)
+        .setTitle("✅ Transfer Successful")
+        .setDescription(`You have successfully transferred ${amount}${ECONOMY.CURRENCY} to ${targetTag}.`)
+        .setTimestamp(),
+    ],
+  };
 };

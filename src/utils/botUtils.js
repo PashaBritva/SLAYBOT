@@ -3,20 +3,29 @@ const config = require("@root/config.js");
 const { success, warn, error, log } = require("@src/helpers/logger");
 
 async function checkForUpdates() {
-  const response = await getJson("https://api.github.com/repos/PashaBritva/SLAYBOT/releases/latest");
-  if (!response.success) return error("VersionCheck: Failed to check for bot updates");
-  if (response.data) {
-    if (require("@root/package.json").version.replace(/[^0-9]/g, "") >= response.data.tag_name.replace(/[^0-9]/g, "")) {
+  try {
+    const response = await getJson("https://api.github.com/repos/PashaBritva/SLAYBOT/releases/latest");
+    if (!response.success) {
+      throw new Error("Failed to fetch release data");
+    }
+
+    const currentVersion = require("@root/package.json").version.replace(/[^0-9]/g, "");
+    const latestVersion = response.data.tag_name.replace(/[^0-9]/g, "");
+
+    if (currentVersion >= latestVersion) {
       success("VersionCheck: Your discord bot is up to date");
     } else {
       warn(`VersionCheck: ${response.data.tag_name} update is available`);
-      warn("download: https://github.com/PashaBritva/SLAYBOT/releases/latest");
+      warn("Download: https://github.com/PashaBritva/SLAYBOT/releases/latest");
     }
+  } catch (err) {
+    error("VersionCheck: Failed to check for bot updates", err.message);
   }
 }
 
 function validateConfig() {
   log("Validating config.js and environment variables");
+  // Validate .env file
   if (!process.env.BOT_TOKEN) {
     error("env: BOT_TOKEN cannot be empty");
     process.exit();

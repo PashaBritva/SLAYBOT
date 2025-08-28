@@ -28,32 +28,32 @@ module.exports = class BotClient extends Client {
       restRequestTimeout: 20000,
     });
 
-    this.config = require("@root/config"); // load the config file
+    this.config = require("@root/config");
 
     /**
      * @type {Command[]}
      */
-    this.commands = []; // store actual command
-    this.commandIndex = new Collection(); // store (alias, arrayIndex) pair
+    this.commands = [];
+    this.commandIndex = new Collection();
 
     /**
      * @type {Collection<string, Command>}
      */
-    this.slashCommands = new Collection(); // store slash commands
+    this.slashCommands = new Collection();
 
     /**
      * @type {Collection<string, BaseContext>}
      */
-    this.contextMenus = new Collection(); // store contextMenus
-    this.counterUpdateQueue = []; // store guildId's that needs counter update
+    this.contextMenus = new Collection();
+    this.counterUpdateQueue = [];
 
     // initialize cache
-    this.cmdCooldownCache = new Collection(); // store message cooldowns for commands
-    this.ctxCooldownCache = new Collection(); // store message cooldowns for contextMenus
-    this.xpCooldownCache = new Collection(); // store message cooldowns for xp
-    this.inviteCache = new Collection(); // store invite data for invite tracking
-    this.antiScamCache = new Collection(); // store message data for anti_scam feature
-    this.flagTranslateCache = new Collection(); // store translated messages
+    this.cmdCooldownCache = new Collection();
+    this.ctxCooldownCache = new Collection();
+    this.xpCooldownCache = new Collection();
+    this.inviteCache = new Collection();
+    this.antiScamCache = new Collection();
+    this.flagTranslateCache = new Collection();
 
     // initialize webhook for sending guild join/leave details
     this.joinLeaveWebhook = process.env.JOIN_LEAVE_LOGS

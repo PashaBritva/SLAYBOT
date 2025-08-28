@@ -240,8 +240,10 @@ class Command {
 
       try {
         if (interaction.replied || interaction.deferred) {
+          // Use followUp for additional messages after the initial response
           await interaction.followUp({ content, ephemeral: true });
         } else {
+          // Initial reply if not already acknowledged
           await interaction.reply({ content, ephemeral: true });
         }
       } catch (followUpError) {

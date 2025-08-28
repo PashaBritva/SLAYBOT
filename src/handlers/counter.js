@@ -24,17 +24,10 @@ async function updateCounterChannels(client) {
 
         let channelName;
         if (config.counter_type.toUpperCase() === "USERS") channelName = `${config.name} : ${all}`;
-        else if (config.counter_type.toUpperCase() === "MEMBERS") channelName = `${config.name} : ${members}`;
-        else if (config.counter_type.toUpperCase() === "BOTS") channelName = `${config.name} : ${bots}`;
-        else if (config.counter_type.toUpperCase() === "ROLE" && config.role_id) {
-          const role = guild.roles.cache.get(config.role_id);
-          if (role) {
-            const roleCount = guild.members.cache.filter((member) => member.roles.cache.has(role.id)).size;
-            channelName = `${config.name} : ${roleCount}`;
-          }
-        }
+        if (config.counter_type.toUpperCase() === "MEMBERS") channelName = `${config.name} : ${members}`;
+        if (config.counter_type.toUpperCase() === "BOTS") channelName = `${config.name} : ${bots}`;
 
-        if (channelName) setVoiceChannelName(vc, channelName);
+        setVoiceChannelName(vc, channelName);
       }
     } catch (ex) {
       client.logger.error(`Error updating counter channels for guildId: ${guildId}`, ex);
@@ -53,11 +46,10 @@ async function updateCounterChannels(client) {
 async function init(guild, settings) {
   if (settings.counters.find((doc) => ["MEMBERS", "BOTS"].includes(doc.counter_type.toUpperCase()))) {
     const stats = await getMemberStats(guild);
-    settings.data.bots = stats[1]; // update bot count in database
+    settings.data.bots = stats[1];
     await settings.save();
   }
 
-  // schedule for update
   if (!guild.client.counterUpdateQueue.includes(guild.id)) guild.client.counterUpdateQueue.push(guild.id);
   return true;
 }

@@ -38,10 +38,6 @@ module.exports = class CounterSetup extends Command {
                 name: "bots",
                 value: "BOTS",
               },
-              {
-                name: "role",
-                value: "ROLE",
-              },
             ],
           },
           {
@@ -49,12 +45,6 @@ module.exports = class CounterSetup extends Command {
             description: "name of the counter channel",
             type: "STRING",
             required: true,
-          },
-          {
-            name: "role",
-            description: "role to count members for (only for 'role' type)",
-            type: "ROLE",
-            required: false,
           },
         ],
       },
@@ -67,21 +57,14 @@ module.exports = class CounterSetup extends Command {
    */
   async messageRun(message, args) {
     const type = args[0].toUpperCase();
-    if (!type || !["USERS", "MEMBERS", "BOTS", "ROLE"].includes(type)) {
-      return message.reply("Incorrect arguments are passed! Counter types: `users/members/bots/role`");
+    if (!type || !["USERS", "MEMBERS", "BOTS"].includes(type)) {
+      return message.reply("Incorrect arguments are passed! Counter types: `users/members/bots`");
     }
     if (args.length < 2) return message.reply("Incorrect Usage! You did not provide name");
-    
-    let role;
-    if (type === "ROLE") {
-      role = message.mentions.roles.first();
-      if (!role) return message.reply("You need to mention a role for the 'role' counter type.");
-    }
-
     args.shift();
     let channelName = args.join(" ");
 
-    const response = await setupCounter(message.guild, type, channelName, role);
+    const response = await setupCounter(message.guild, type, channelName);
     return message.reply(response);
   }
 
@@ -91,31 +74,19 @@ module.exports = class CounterSetup extends Command {
   async interactionRun(interaction) {
     const type = interaction.options.getString("type");
     const name = interaction.options.getString("name");
-    const role = interaction.options.getRole("role");
 
-    if (type === "ROLE" && !role) {
-      return interaction.followUp("You need to specify a role for the 'role' counter type.");
-    }
-
-    const response = await setupCounter(interaction.guild, type.toUpperCase(), name, role);
+    const response = await setupCounter(interaction.guild, type.toUpperCase(), name);
     return interaction.followUp(response);
   }
 };
 
-async function setupCounter(guild, type, name, role) {
+async function setupCounter(guild, type, name) {
   let channelName = name;
 
   const stats = await getMemberStats(guild);
-
-  let initialCount = 0;
-  if (type === "USERS") initialCount = stats[0];
-  else if (type === "MEMBERS") initialCount = stats[2];
-  else if (type === "BOTS") initialCount = stats[1];
-  else if (type === "ROLE" && role) {
-    initialCount = guild.members.cache.filter((member) => member.roles.cache.has(role.id)).size;
-  }
-
-  channelName += ` : ${initialCount}`;
+  if (type === "USERS") channelName += ` : ${stats[0]}`;
+  else if (type === "MEMBERS") channelName += ` : ${stats[2]}`;
+  else if (type === "BOTS") channelName += ` : ${stats[1]}`;
 
   const vc = await guild.channels.create(channelName, {
     type: "GUILD_VOICE",
@@ -133,7 +104,7 @@ async function setupCounter(guild, type, name, role) {
 
   const settings = await getSettings(guild);
 
-  const exists = settings.counters.find((v) => v.counter_type.toUpperCase() === type && v.role_id === role?.id);
+  const exists = settings.counters.find((v) => v.counter_type.toUpperCase() === type);
   if (exists) {
     exists.name = name;
     exists.channel_id = vc.id;
@@ -142,7 +113,6 @@ async function setupCounter(guild, type, name, role) {
       counter_type: type,
       channel_id: vc.id,
       name,
-      role_id: role?.id,
     });
   }
 
