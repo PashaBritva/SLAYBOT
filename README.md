@@ -10,7 +10,7 @@
 
 ### Prerequisites
 
-* [Node.js](https://nodejs.org/en/) v16.6.0 or higher
+* [Node.js](https://nodejs.org/en/) v18 or higher
 * [Git](https://git-scm.com/downloads)
 * [MongoDB](https://www.mongodb.com)
 * [DiscordJs](https://www.npmjs.com/package/discord.js/v/13.15.1) v13.15.1
