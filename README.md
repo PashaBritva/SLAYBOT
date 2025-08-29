@@ -1,7 +1,5 @@
 # 🤖 About Me
 
-> An awesome multipurpose discord bot built using [discord.js v13](https://discord.js.org) with support for slash commands and context menus
-
 > Demo Bot: [Invite Here](https://discord.com/api/oauth2/authorize?client_id=1228720060219129856&scope=bot+applications.commands&permissions=275380301174)
 >
 > Support Server: [Join Here](https://discord.gg/6D5ZpJy4Eg)
