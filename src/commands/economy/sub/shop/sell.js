@@ -46,10 +46,12 @@ module.exports = async function sell(guildId, user, name) {
 
   const sellPrice = Math.floor(item.price * 0.8);
   userDoc.coins += sellPrice;
+  shop.balance -+ sellPrice;
 
   userDoc.inventory = userDoc.inventory.filter(i => i.name.toLowerCase() !== name.toLowerCase());
 
   await userDoc.save();
+  await shop.save();
 
   return new MessageEmbed()
     .setColor("GREEN")

@@ -41,6 +41,7 @@ module.exports = class ShopCommand extends Command {
               { name: "name", description: "Item name", type: "STRING", required: true },
               { name: "price", description: "Item price", type: "INTEGER", required: true },
               { name: "role", description: "Role to give (optional)", type: "ROLE", required: false },
+              { name: "duration", description: "Timestamp to role (optional)", type: "INTEGER", required: false },
             ],
           },
           {
@@ -118,7 +119,8 @@ module.exports = class ShopCommand extends Command {
       if (isNaN(price)) return this.errorEmbed("Price must be a valid number", message);
       if (price < 0) return this.errorEmbed("Price cannot be negative", message);
       
-      const response = await additem(message.guild.id, name, price, roleId);
+      const response = await additem(message.guild.id, name, price, roleId, duration ? parseInt(duration) : null);
+
       return message.reply({ embeds: [response] });
     }
 
@@ -209,6 +211,7 @@ module.exports = class ShopCommand extends Command {
       const name = interaction.options.getString("name");
       const price = interaction.options.getInteger("price");
       const role = interaction.options.getRole("role");
+      const durationValue = interaction.options.getInteger("duration");
       const roleId = role ? role.id : null;
       
       if (price < 0) {
@@ -216,7 +219,7 @@ module.exports = class ShopCommand extends Command {
         return interaction.followUp({ embeds: [response] });
       }
       
-      const response = await additem(interaction.guild.id, name, price, roleId);
+      const response = await additem(interaction.guild.id, name, price, roleId, durationValue);
       return interaction.followUp({ embeds: [response] });
     }
 

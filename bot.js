@@ -5,6 +5,7 @@ const path = require("path");
 const { startupCheck } = require("@utils/botUtils");
 const { BotClient } = require("@src/structures");
 const BlockedServer = require("@schemas/BlockedServer");
+const tempRolesHandler = require("@utils/tempRolesUtils");
 
 global.__appRoot = path.resolve(__dirname);
 
@@ -57,8 +58,6 @@ const loadBlockedServers = async (client) => {
   await startupCheck();
   
   await client.initializeMongoose();
-  
-  await loadBlockedServers(client);
 
   if (client.config.DASHBOARD.enabled) {
     client.logger.log("Launching dashboard");
@@ -71,4 +70,7 @@ const loadBlockedServers = async (client) => {
   }
 
   await client.login(process.env.BOT_TOKEN);
+
+  await loadBlockedServers(client);
+  await tempRolesHandler(client);
 })();

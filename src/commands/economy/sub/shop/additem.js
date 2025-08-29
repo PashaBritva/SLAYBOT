@@ -1,8 +1,9 @@
 const { ECONOMY } = require("@root/config");
 const ServerShop = require("@schemas/Shop");
+const TemporaryRoles = require("@schemas/TemporaryRoles");
 const { MessageEmbed } = require("discord.js");
 
-module.exports = async function additem(guildId, name, price, roleId = null) {
+module.exports = async function additem(guildId, name, price, roleId = null, duration = null) {
   let shop = await ServerShop.findOne({ guildId });
   if (!shop) {
     shop = new ServerShop({ guildId, items: [] });
@@ -19,14 +20,16 @@ module.exports = async function additem(guildId, name, price, roleId = null) {
   const item = {
     name,
     price,
-    ...(roleId && { roleId })
+    ...(roleId && { roleId }),
+    ...(duration && { duration })
   };
 
   shop.items.push(item);
   await shop.save();
 
-  const typeDescription = roleId ? ` (Role: <@&${roleId}>)` : " (Custom item)";
-  
+  let typeDescription = roleId ? ` (Role: <@&${roleId}>)` : " (Custom item)";
+  if (duration) typeDescription += ` - lasts ${duration} hour(s)`;
+
   return new MessageEmbed()
     .setColor("GREEN")
     .setTitle("🛍️ Item Added")
