@@ -2,7 +2,7 @@ const ServerShop = require("@schemas/Shop");
 const { MessageEmbed } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const { ECONOMY } = require("@root/config");
-const TemporaryRole = require("@schemas/TemporaryRole");
+const TemporaryRole = require("@schemas/TemporaryRoles");
 
 module.exports = async function sell(guildId, user, name) {
   const shop = await ServerShop.findOne({ guildId });
