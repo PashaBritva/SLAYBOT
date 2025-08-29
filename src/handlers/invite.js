@@ -19,11 +19,10 @@ const cacheInvite = (invite, isVanity) => ({
 async function cacheGuildInvites(guild) {
   if (!guild.members.me.permissions.has("MANAGE_GUILD")) return new Collection();
   try {
-      invites = await guild.invites.fetch();
-    } catch(err) {
-      console.error(`Ошибка получения инвайтов для ${guild.id}`, err);
-    }
-
+    invites = await guild.invites.fetch();
+  } catch(err) {
+    console.error(`Ошибка получения инвайтов для ${guild.id}`, err);
+  }
 
   const tempMap = new Collection();
   invites.forEach((inv) => tempMap.set(inv.code, cacheInvite(inv)));
