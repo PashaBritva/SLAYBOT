@@ -1,8 +1,6 @@
 # 🤖 About Me
 
-> An awesome multipurpose discord bot built using [discord.js v13](https://discord.js.org) with support for slash commands and context menus
-
-> Demo Bot: [Invite Here](https://discord.com/api/oauth2/authorize?client_id=1228720060219129856&scope=bot+applications.commands&permissions=275380301174)
+> Demo Bot: [Invite Here](https://discord.gg/6D5ZpJy4Eg)
 >
 > Support Server: [Join Here](https://discord.gg/6D5ZpJy4Eg)
 >
@@ -10,7 +8,7 @@
 
 ### Prerequisites
 
-* [Node.js](https://nodejs.org/en/) v16.6.0 or higher
+* [Node.js](https://nodejs.org/en/download) v18 or higher
 * [Git](https://git-scm.com/downloads)
 * [MongoDB](https://www.mongodb.com)
 * [DiscordJs](https://www.npmjs.com/package/discord.js/v/13.15.1) v13.15.1
@@ -34,7 +32,7 @@ If you need any additional help, make sure to read our guides [here](docs/additi
 
 ### Features
 
-Automod is a feature-rich discord bot with new features constantly being updated! Current features include
+SLAYBOT is a feature-rich discord bot with new features constantly being updated! Current features include
 
 * **Auto-Moderation**: Power auto-moderation to keep your discord server clean
 * **Powerful Moderation with Logging**: Moderate and log every action you take
@@ -47,7 +45,7 @@ Automod is a feature-rich discord bot with new features constantly being updated
 
 ### Categories
 
-Automod has an extensive list of all useful commands (**more than 100**) which are categorized as follows
+SLAYBOT has an extensive list of all useful commands (**more than 100**) which are categorized as follows
 
 * **Automod**: `antighostping`, `antiinvites`, `antilinks`, `antiscam`, `maxlines`, `maxmentions`, ...
 * **Admin**: `welcome`, `farewell`, `reaction-roles`, ...
