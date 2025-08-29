@@ -25,8 +25,8 @@ const sendWebhook = (content, err) => {
     embed.setDescription(
       "```js\n" + (errString.length > 4096 ? `${errString.substr(0, 4000)}...` : errString) + "\n```"
     );
-  if (err?.description) embed.addField("Description", content);
-  if (err?.message) embed.addField("Message", err?.message);
+  if (err?.description) embed.addFields({ name: "Description", value: content });
+  if (err?.message) embed.addFields({ name: "Message", value: err?.message });
 
   errorWebhook.send({
     username: "Logs",

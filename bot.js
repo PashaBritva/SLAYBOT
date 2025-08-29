@@ -15,11 +15,13 @@ client.loadCommands("src/commands");
 client.loadContexts("src/contexts");
 client.loadEvents("src/events");
 
-process.on("unhandledRejection", (err) => {
-  client.logger.error(`Unhandled exception: ${err.message}`, err.stack || err);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason.stack || reason);
+  client.logger.error(`Unhandled exception: ${reason.message || reason}`, reason.stack || reason);
 });
 
 process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err.stack || err);
   client.logger.error(`Uncaught exception: ${err.message}`, err.stack || err);
 });
 

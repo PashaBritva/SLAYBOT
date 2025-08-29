@@ -17,8 +17,13 @@ const cacheInvite = (invite, isVanity) => ({
  * @param {import("discord.js").Guild} guild
  */
 async function cacheGuildInvites(guild) {
-  if (!guild.me.permissions.has("MANAGE_GUILD")) return new Collection();
-  const invites = await guild.invites.fetch();
+  if (!guild.members.me.permissions.has("MANAGE_GUILD")) return new Collection();
+  try {
+      invites = await guild.invites.fetch();
+    } catch(err) {
+      console.error(`Ошибка получения инвайтов для ${guild.id}`, err);
+    }
+
 
   const tempMap = new Collection();
   invites.forEach((inv) => tempMap.set(inv.code, cacheInvite(inv)));

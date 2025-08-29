@@ -167,56 +167,55 @@ class Command {
   }
 
   /**
-   *
    * @param {import('discord.js').CommandInteraction} interaction
    */
   async executeInteraction(interaction) {
-    // Validation checks
+    // Validators
     for (const validation of this.validations) {
       if (!validation.callback(interaction)) {
         this.client.logger.warn(`Validation failed: ${validation.message}`);
-        return interaction.reply({
+        return this.safeReply(interaction, {
           content: validation.message,
           ephemeral: true,
         });
       }
     }
 
-    // Owner-only commands
+    // For owners only
     if (this.category === "OWNER" && !OWNER_IDS.includes(interaction.user.id)) {
-      return interaction.reply({
+      return this.safeReply(interaction, {
         content: `This command is only accessible to bot owners`,
         ephemeral: true,
       });
     }
 
-    // Bot permissions
+    // Verifying bot rights
     if (this.botPermissions.length > 0) {
-      const botPerms = interaction.guild.me.permissions;
+      const botPerms = interaction.guild.members.me.permissions;
       if (!botPerms.has(this.botPermissions)) {
-        return interaction.reply({
+        return this.safeReply(interaction, {
           content: `I need ${parsePermissions(this.botPermissions)} for this command`,
           ephemeral: true,
         });
       }
     }
 
-    // User permissions
+    // Verifying user rights
     if (this.userPermissions.length > 0) {
       const memberPerms = interaction.member.permissions;
       if (!memberPerms.has(this.userPermissions)) {
-        return interaction.reply({
+        return this.safeReply(interaction, {
           content: `You need ${parsePermissions(this.userPermissions)} for this command`,
           ephemeral: true,
         });
       }
     }
 
-    // Cooldown check
+    // Cooldown
     if (this.cooldown > 0) {
       const remaining = this.getRemainingCooldown(interaction.user.id);
       if (remaining > 0) {
-        return interaction.reply({
+        return this.safeReply(interaction, {
           content: `You are on cooldown. You can use the command again in \`${timeformat(remaining)}\``,
           ephemeral: true,
         });
@@ -224,36 +223,41 @@ class Command {
     }
 
     try {
-      // Defer reply with a timeout check
       const ephemeral = this.slashCommand?.ephemeral ?? false;
       if (!interaction.replied && !interaction.deferred) {
         await interaction.deferReply({ ephemeral });
       }
 
-      // Execute the command logic
       await this.interactionRun(interaction);
     } catch (ex) {
       this.client.logger.error("interactionRun", ex);
 
       const errorMessage = ex instanceof Error ? ex.message : "An unexpected error occurred.";
-      const content = `Oops! ${errorMessage}`;
-
-      try {
-        if (interaction.replied || interaction.deferred) {
-          // Use followUp for additional messages after the initial response
-          await interaction.followUp({ content, ephemeral: true });
-        } else {
-          // Initial reply if not already acknowledged
-          await interaction.reply({ content, ephemeral: true });
-        }
-      } catch (followUpError) {
-        this.client.logger.error("followUpError", followUpError);
-      }
+      await this.safeReply(interaction, { content: `Oops! ${errorMessage}`, ephemeral: true });
     } finally {
-      // Apply cooldown after execution
       this.applyCooldown(interaction.user.id);
     }
   }
+
+  /**
+   * A universal response to interaction
+   * @param {import('discord.js').Interaction} interaction
+   * @param {import('discord.js').InteractionReplyOptions} options
+   */
+  async safeReply(interaction, options) {
+    try {
+      if (!interaction.deferred && !interaction.replied) {
+        return await interaction.reply(options);
+      } else if (interaction.deferred) {
+        return await interaction.editReply(options);
+      } else {
+        return await interaction.followUp(options);
+      }
+    } catch (err) {
+      this.client.logger.error("safeReply", err);
+    }
+  }
+
 
   /**
    * Build a usage embed for this command
