@@ -124,7 +124,7 @@ async function performAutomod(message, settings) {
       .setAuthor({ name: "Auto Moderation" })
       .setThumbnail(author.displayAvatarURL())
       .setColor(EMBED_COLORS.AUTOMOD)
-      .setDescription(`**Channel:** ${channel.toString()}\n**Content:**\n${content}`)
+      .setDescription(`**Channel:** ${channel.toString()}`)
       .setFooter({
         text: `By ${author.tag} | ${author.id}`,
         iconURL: author.avatarURL(),
@@ -147,7 +147,7 @@ async function performAutomod(message, settings) {
 
     // check if max strikes are received
     if (memberDb.strikes >= automod.strikes) {
-      await addModAction(message.guild.me, message.member, "Automod: Max strikes received", automod.action); // Add Moderation Action
+      await addModAction(message.guild.members.me, message.member, "Automod: Max strikes received", automod.action); // Add Moderation Action
       memberDb.strikes = 0; // Reset Strikes
     }
 

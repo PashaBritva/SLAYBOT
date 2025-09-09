@@ -17,7 +17,7 @@ module.exports = async (client, reaction, user) => {
 
   const reactionRole = reactionHandler.getRole(reaction);
   if (reactionRole) {
-    const member = await message.guild.members.fetch(user.id);
+    const member = await message.guild.members.members.fetch(user.id);
     if (!member) return;
     await member.roles.remove(reactionRole);
   }

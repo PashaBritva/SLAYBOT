@@ -23,9 +23,7 @@ async function getImageFromCommand(message, args) {
   if (!url && args.length !== 0) {
     try {
       url = new URL(args[0]).href;
-    } catch (ex) {
-      /* Ignore */
-    }
+    } catch (ex) {}
   }
 
   if (!url && message.mentions.users.size > 0) {

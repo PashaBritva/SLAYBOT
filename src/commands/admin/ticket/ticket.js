@@ -170,7 +170,7 @@ module.exports = class Ticket extends Command {
 
     // Setup
     if (input === "setup") {
-      if (!message.guild.me.permissions.has("MANAGE_CHANNELS")) {
+      if (!message.guild.members.me.permissions.has("MANAGE_CHANNELS")) {
         return message.reply("I am missing `Manage Channels` to create ticket channels");
       }
       return runInteractiveSetup(message);

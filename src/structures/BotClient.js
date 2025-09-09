@@ -1,4 +1,12 @@
-const { Client, Collection, Intents, WebhookClient } = require("discord.js");
+const {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  Partials,
+  WebhookClient,
+  ApplicationCommandType,
+  PermissionFlagsBits,
+} = require("discord.js");
 const path = require("path");
 const fs = require("fs");
 const { table } = require("table");
@@ -8,42 +16,38 @@ const MusicManager = require("./MusicManager");
 const Command = require("./Command");
 const BaseContext = require("./BaseContext");
 const GiveawayManager = require("./GiveawayManager");
+const convertSlashCommands = require("@utils/convertSlashTypes");
 
 module.exports = class BotClient extends Client {
   constructor() {
     super({
       intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.GUILD_MESSAGES,
-        Intents.FLAGS.GUILD_INVITES,
-        Intents.FLAGS.GUILD_MEMBERS,
-        //Intents.FLAGS.GUILD_PRESENCES,
-        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-        Intents.FLAGS.GUILD_VOICE_STATES,
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildVoiceStates,
       ],
-      partials: ["USER", "MESSAGE", "REACTION"],
+      partials: [Partials.User, Partials.Message, Partials.Reaction],
       allowedMentions: {
         repliedUser: false,
       },
-      restRequestTimeout: 20000,
+      rest: {
+        timeout: 20000,
+      },
     });
 
     this.config = require("@root/config");
 
-    /**
-     * @type {Command[]}
-     */
+    /** @type {Command[]} */
     this.commands = [];
     this.commandIndex = new Collection();
 
-    /**
-     * @type {Collection<string, Command>}
-     */
+    /** @type {Collection<string, Command>} */
     this.slashCommands = new Collection();
 
-    /**
-     * @type {Collection<string, BaseContext>}
-     */
+    /** @type {Collection<string, BaseContext>} */
     this.contextMenus = new Collection();
     this.counterUpdateQueue = [];
 
@@ -70,21 +74,12 @@ module.exports = class BotClient extends Client {
     this.logger = logger;
   }
 
-  /**
-   * Initialize mongoose connection and keep it alive
-   */
   async initializeMongoose() {
     this.logger.log(`Connecting to MongoDb...`);
-
     await mongoose.connect(process.env.MONGO_CONNECTION);
-
     this.logger.success("Mongoose: Database connection established");
   }
 
-  /**
-   * @param {string} directory
-   * @private
-   */
   getAbsoluteFilePaths(directory) {
     const filePaths = [];
     const readCommands = (dir) => {
@@ -96,7 +91,7 @@ module.exports = class BotClient extends Client {
         } else {
           const extension = path.extname(file);
           if (extension !== ".js") {
-            this.logger.debug(`getAbsoluteFilePaths - Skipping ${file}: not a js file`);
+            this.logger.debug(`Skipping ${file}: not a js file`);
             return;
           }
           const filePath = path.join(__appRoot, dir, file);
@@ -108,10 +103,6 @@ module.exports = class BotClient extends Client {
     return filePaths;
   }
 
-  /**
-   * Load all events from the specified directory
-   * @param {string} directory directory containing the event files
-   */
   loadEvents(directory) {
     this.logger.log(`Loading events...`);
     let success = 0;
@@ -126,14 +117,10 @@ module.exports = class BotClient extends Client {
         const eventName = path.basename(file, ".js");
         const event = require(filePath);
 
-        // music events
         if (dirName === "music") {
           this.musicManager.on(eventName, event.bind(null, this));
           musicEvents.push([file, "✓"]);
-        }
-
-        // bot events
-        else {
+        } else {
           this.on(eventName, event.bind(null, this));
           clientEvents.push([file, "✓"]);
         }
@@ -148,10 +135,7 @@ module.exports = class BotClient extends Client {
 
     console.log(
       table(clientEvents, {
-        header: {
-          alignment: "center",
-          content: "Client Events",
-        },
+        header: { alignment: "center", content: "Client Events" },
         singleLine: true,
         columns: [{ width: 25 }, { width: 5, alignment: "center" }],
       })
@@ -159,10 +143,7 @@ module.exports = class BotClient extends Client {
 
     console.log(
       table(musicEvents, {
-        header: {
-          alignment: "center",
-          content: "Music Events",
-        },
+        header: { alignment: "center", content: "Music Events" },
         singleLine: true,
         columns: [{ width: 25 }, { width: 5, alignment: "center" }],
       })
@@ -171,22 +152,12 @@ module.exports = class BotClient extends Client {
     this.logger.log(`Loaded ${success + failed} events. Success (${success}) Failed (${failed})`);
   }
 
-  /**
-   * Find command matching the invoke
-   * @param {string} invoke
-   * @returns {Command|undefined}
-   */
   getCommand(invoke) {
     const index = this.commandIndex.get(invoke.toLowerCase());
     return index !== undefined ? this.commands[index] : undefined;
   }
 
-  /**
-   * Register command file in the client
-   * @param {Command} cmd
-   */
   loadCommand(cmd) {
-    // Command
     if (cmd.command?.enabled) {
       const index = this.commands.length;
       if (this.commandIndex.has(cmd.name)) {
@@ -202,7 +173,6 @@ module.exports = class BotClient extends Client {
       this.logger.debug(`Skipping command ${cmd.name}. Disabled!`);
     }
 
-    // Slash Command
     if (cmd.slashCommand?.enabled) {
       if (this.slashCommands.has(cmd.name)) throw new Error(`Slash Command ${cmd.name} already registered`);
       this.slashCommands.set(cmd.name, cmd);
@@ -211,10 +181,6 @@ module.exports = class BotClient extends Client {
     }
   }
 
-  /**
-   * Load all commands from the specified directory
-   * @param {string} directory
-   */
   loadCommands(directory) {
     this.logger.log(`Loading commands...`);
     this.getAbsoluteFilePaths(directory).forEach((filePath) => {
@@ -233,10 +199,6 @@ module.exports = class BotClient extends Client {
     if (this.slashCommands.size > 100) throw new Error("A maximum of 100 slash commands can be enabled");
   }
 
-  /**
-   * Load all contexts from the specified directory
-   * @param {string} directory
-   */
   loadContexts(directory) {
     this.logger.log(`Loading contexts...`);
     this.getAbsoluteFilePaths(directory).forEach((filePath) => {
@@ -252,8 +214,8 @@ module.exports = class BotClient extends Client {
         this.logger.error(`Context: Failed to load ${file} Reason: ${ex.message}`);
       }
     });
-    const userContexts = this.contextMenus.filter((ctx) => ctx.type === "USER").size;
-    const messageContexts = this.contextMenus.filter((ctx) => ctx.type === "MESSAGE").size;
+    const userContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.User).size;
+    const messageContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.Message).size;
 
     if (userContexts > 3) throw new Error("A maximum of 3 USER contexts can be enabled");
     if (messageContexts > 3) throw new Error("A maximum of 3 MESSAGE contexts can be enabled");
@@ -262,26 +224,24 @@ module.exports = class BotClient extends Client {
     this.logger.success(`Loaded ${messageContexts} MESSAGE contexts`);
   }
 
-  /**
-   * Register slash command on startup
-   * @param {string} [guildId]
-   */
   async registerInteractions(guildId) {
     const toRegister = [];
 
-    // filter slash commands
+    if (this.config.INTERACTIONS.SLASH) {
+      convertSlashCommands(this.slashCommands);
+    }
+
     if (this.config.INTERACTIONS.SLASH) {
       this.slashCommands
         .map((cmd) => ({
           name: cmd.name,
           description: cmd.description,
-          type: "CHAT_INPUT",
+          type: ApplicationCommandType.ChatInput,
           options: cmd.slashCommand.options,
         }))
         .forEach((s) => toRegister.push(s));
     }
 
-    // filter contexts
     if (this.config.INTERACTIONS.CONTEXT) {
       this.contextMenus
         .map((ctx) => ({
@@ -291,54 +251,44 @@ module.exports = class BotClient extends Client {
         .forEach((c) => toRegister.push(c));
     }
 
-    // Register GLobally
     if (!guildId) {
       await this.application.commands.set(toRegister);
-    }
-
-    // Register for a specific guild
-    else if (guildId && typeof guildId === "string") {
+    } else if (typeof guildId === "string") {
       const guild = this.guilds.cache.get(guildId);
       if (!guild) throw new Error(`No guilds found matching ${guildId}`);
       await guild.commands.set(toRegister);
-    }
-
-    // Throw an error
-    else {
+    } else {
       throw new Error(`Did you provide a valid guildId to register slash commands`);
     }
 
     this.logger.success("Successfully registered slash commands");
   }
 
-  /**
-   * Get bot's invite
-   */
   getInvite() {
     return this.generateInvite({
       scopes: ["bot", "applications.commands"],
       permissions: [
-        "ADD_REACTIONS",
-        "ATTACH_FILES",
-        "BAN_MEMBERS",
-        "CHANGE_NICKNAME",
-        "CONNECT",
-        "DEAFEN_MEMBERS",
-        "EMBED_LINKS",
-        "KICK_MEMBERS",
-        "MANAGE_CHANNELS",
-        "MANAGE_GUILD",
-        "MANAGE_MESSAGES",
-        "MANAGE_NICKNAMES",
-        "MANAGE_ROLES",
-        "MOVE_MEMBERS",
-        "MUTE_MEMBERS",
-        "PRIORITY_SPEAKER",
-        "READ_MESSAGE_HISTORY",
-        "SEND_MESSAGES",
-        "SEND_MESSAGES_IN_THREADS",
-        "SPEAK",
-        "VIEW_CHANNEL",
+        PermissionFlagsBits.AddReactions,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.BanMembers,
+        PermissionFlagsBits.ChangeNickname,
+        PermissionFlagsBits.Connect,
+        PermissionFlagsBits.DeafenMembers,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.KickMembers,
+        PermissionFlagsBits.ManageChannels,
+        PermissionFlagsBits.ManageGuild,
+        PermissionFlagsBits.ManageMessages,
+        PermissionFlagsBits.ManageNicknames,
+        PermissionFlagsBits.ManageRoles,
+        PermissionFlagsBits.MoveMembers,
+        PermissionFlagsBits.MuteMembers,
+        PermissionFlagsBits.PrioritySpeaker,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.SendMessagesInThreads,
+        PermissionFlagsBits.Speak,
+        PermissionFlagsBits.ViewChannel,
       ],
     });
   }

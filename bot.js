@@ -17,38 +17,38 @@ client.loadContexts("src/contexts");
 client.loadEvents("src/events");
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason.stack || reason);
-  client.logger.error(`Unhandled exception: ${reason.message || reason}`, reason.stack || reason);
+  console.error("Unhandled Rejection at:", promise, "reason:", reason?.stack || reason);
+  client.logger?.error?.(
+    `Unhandled exception: ${reason?.message || reason}`,
+    reason?.stack || reason
+  );
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err.stack || err);
-  client.logger.error(`Uncaught exception: ${err.message}`, err.stack || err);
+  console.error("Uncaught Exception:", err?.stack || err);
+  client.logger?.error?.(`Uncaught exception: ${err?.message}`, err?.stack || err);
 });
 
 const loadBlockedServers = async (client) => {
   try {
     const now = new Date();
     const blocked = await BlockedServer.find({
-      $or: [
-        { isPermanent: true },
-        { expiresAt: { $gt: now } }
-      ]
+      $or: [{ isPermanent: true }, { expiresAt: { $gt: now } }],
     });
-    
-    client.blockedServers = blocked.map(s => s.serverId);
+
+    client.blockedServers = blocked.map((s) => s.serverId);
     client.logger.log(`Загружено ${client.blockedServers.length} активных блокировок`);
 
-    blocked.filter(s => !s.isPermanent).forEach(server => {
+    for (const server of blocked.filter((s) => !s.isPermanent)) {
       const remaining = server.expiresAt - now;
       if (remaining > 0) {
         setTimeout(async () => {
           await BlockedServer.deleteOne({ _id: server._id });
-          client.blockedServers = client.blockedServers.filter(id => id !== server.serverId);
+          client.blockedServers = client.blockedServers.filter((id) => id !== server.serverId);
           client.logger.log(`Сервер ${server.serverId} автоматически разблокирован`);
         }, remaining);
       }
-    });
+    }
   } catch (err) {
     client.logger.error("Ошибка загрузки блокировок:", err);
   }
@@ -56,7 +56,6 @@ const loadBlockedServers = async (client) => {
 
 (async () => {
   await startupCheck();
-  
   await client.initializeMongoose();
 
   if (client.config.DASHBOARD.enabled) {

@@ -109,7 +109,7 @@ function findMatchingRoles(guild, query) {
  */
 async function resolveMember(message, query, exact = false) {
   if (!message || !query || typeof query !== "string") return;
-  const memberManager = message.guild.members;
+  const memberManager = message.guild.members.members;
 
   const patternMatch = query.match(MEMBER_MENTION);
   if (patternMatch) {
@@ -147,7 +147,7 @@ async function resolveMembers(message) {
   let lastMatch, result;
   while ((result = regex.exec(message.content))) {
     lastMatch = result[0];
-    let target = await message.guild.members.fetch(result[1]);
+    let target = await message.guild.members.members.fetch(result[1]);
     if (target) targetMembers.push(target);
   }
 

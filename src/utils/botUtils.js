@@ -9,15 +9,16 @@ async function checkForUpdates() {
       throw new Error("Failed to fetch release data");
     }
 
-    const currentVersion = require("@root/package.json").version.replace(/[^0-9]/g, "");
-    const latestVersion = response.data.tag_name.replace(/[^0-9]/g, "");
-
-    if (currentVersion >= latestVersion) {
+    const semver = require("semver");
+    const currentVersion = require("@root/package.json").version;
+    const latestVersion = response.data.tag_name.replace(/^v/, "");
+    if (semver.gte(currentVersion, latestVersion)) {
       success("VersionCheck: Your discord bot is up to date");
     } else {
-      warn(`VersionCheck: ${response.data.tag_name} update is available`);
+      warn(`VersionCheck: Update available: ${latestVersion}`);
       warn("Download: https://github.com/PashaBritva/SLAYBOT/releases/latest");
     }
+
   } catch (err) {
     error("VersionCheck: Failed to check for bot updates", err.message);
   }
@@ -85,7 +86,7 @@ async function sendMessage(channel, content, seconds) {
   try {
     if (!seconds) return await channel.send(content);
     const reply = await channel.send(content);
-    setTimeout(() => reply.deletable && reply.delete().catch((ex) => {}), seconds * 1000);
+    setTimeout(async () => { try { if (reply.deletable) await reply.delete(); } catch (e) {} }, seconds * 1000);
   } catch (ex) {
     error(`sendMessage`, ex);
   }
@@ -155,8 +156,8 @@ const permissions = {
  * @param {import("discord.js").PermissionResolvable[]} perms
  */
 const parsePermissions = (perms) => {
-  const permissionWord = `permission${perms.length > 1 ? "s" : ""}`;
-  return perms.map((perm) => `\`${permissions[perm]}\``).join(", ") + permissionWord;
+  const word = perms.length > 1 ? "permissions" : "permission";
+  return `${perms.map((p) => `\`${permissions[p]}\``).join(", ")} ${word}`;
 };
 
 const musicValidations = [
@@ -170,7 +171,7 @@ const musicValidations = [
   },
   {
     callback: ({ member, client, guildId }) =>
-      member.voice.channelId === client.musicManager.get(guildId).voiceChannel,
+      member.voice.channelId === client.musicManager.get(guildId)?.voiceChannel,
     message: "🚫 You're not in the same voice channel.",
   },
 ];

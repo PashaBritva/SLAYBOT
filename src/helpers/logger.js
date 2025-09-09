@@ -1,9 +1,9 @@
 const { inspect } = require("util");
-const { MessageEmbed, WebhookClient } = require("discord.js"),
-  chalk = require("chalk"),
-  moment = require("moment"),
-  nodeLogger = require("simple-node-logger"),
-  config = require("@root/config");
+const { EmbedBuilder, WebhookClient } = require("discord.js");
+const chalk = require("chalk");
+const moment = require("moment");
+const nodeLogger = require("simple-node-logger");
+const config = require("@root/config");
 
 const simpleLogger = nodeLogger.createRollingFileLogger({
   logDirectory: "./logs",
@@ -13,25 +13,36 @@ const simpleLogger = nodeLogger.createRollingFileLogger({
 
 simpleLogger.setLevel("debug");
 
-const errorWebhook = process.env.ERROR_LOGS ? new WebhookClient({ url: process.env.ERROR_LOGS }) : undefined;
+const errorWebhook = process.env.ERROR_LOGS
+  ? new WebhookClient({ url: process.env.ERROR_LOGS })
+  : undefined;
 
 const sendWebhook = (content, err) => {
   if (!content && !err) return;
   const errString = err?.stack || err;
 
-  const embed = new MessageEmbed().setColor(config.EMBED_COLORS.ERROR).setAuthor({ name: err?.name || "Error" });
+  const embed = new EmbedBuilder()
+    .setColor(config.EMBED_COLORS.ERROR)
+    .setAuthor({ name: err?.name || "Error" });
 
   if (errString)
     embed.setDescription(
-      "```js\n" + (errString.length > 4096 ? `${errString.substr(0, 4000)}...` : errString) + "\n```"
+      "```js\n" + (errString.length > 1020 ? `${errString.substr(0, 1000)}...` : errString) + "\n```"
     );
   if (err?.description) embed.addFields({ name: "Description", value: content });
-  if (err?.message) embed.addFields({ name: "Message", value: err?.message });
+  if (err?.message) {
+    embed.addFields({
+      name: "Message",
+      value: err.message.length > 1020 ? `${err.message.substring(0, 1020)}...` : err.message,
+    });
+  }
 
-  errorWebhook.send({
-    username: "Logs",
-    embeds: [embed],
-  });
+  if (errorWebhook) {
+    errorWebhook.send({
+      username: "Logs",
+      embeds: [embed],
+    });
+  }
 };
 
 const sendLogs = (level, content, data) => {

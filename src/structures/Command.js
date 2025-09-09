@@ -113,7 +113,7 @@ class Command {
    * @param {string} prefix
    */
   async executeCommand(message, args, invoke, prefix) {
-    if (!message.channel.permissionsFor(message.guild.me).has("SEND_MESSAGES")) return;
+    if (!message.channel.permissionsFor(message.guild.members.me).has("SEND_MESSAGES")) return;
 
     // callback validations
     for (const validation of this.validations) {
@@ -136,7 +136,7 @@ class Command {
 
     // bot permissions
     if (this.botPermissions.length > 0) {
-      if (!message.channel.permissionsFor(message.guild.me).has(this.botPermissions)) {
+      if (!message.channel.permissionsFor(message.guild.members.me).has(this.botPermissions)) {
         return message.reply(`I need ${parsePermissions(this.botPermissions)} for this command`);
       }
     }

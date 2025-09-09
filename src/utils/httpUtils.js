@@ -1,7 +1,6 @@
 const ISO6391 = require("iso-639-1");
 const sourcebin = require("sourcebin_js");
 const { error, debug } = require("@src/helpers/logger");
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const gTranslate = require("@vitalets/google-translate-api");
 
 /**
@@ -13,16 +12,14 @@ async function getJson(url) {
     const response = await fetch(url);
     const json = await response.json();
     return {
-      success: response.status === 200 ? true : false,
+      success: response.ok,
       status: response.status,
       data: json,
     };
   } catch (ex) {
     debug(`Url: ${url}`);
     error(`getJson`, ex);
-    return {
-      success: false,
-    };
+    return { success: false };
   }
 }
 
@@ -33,18 +30,16 @@ async function getJson(url) {
 async function getBuffer(url) {
   try {
     const response = await fetch(url);
-    const buffer = await response.buffer();
+    const buffer = Buffer.from(await response.arrayBuffer());
     return {
-      success: response.status === 200 ? true : false,
+      success: response.ok,
       status: response.status,
       buffer,
     };
   } catch (ex) {
     debug(`Url: ${url}`);
     error(`getBuffer`, ex);
-    return {
-      success: false,
-    };
+    return { success: false };
   }
 }
 
@@ -66,16 +61,16 @@ async function translate(content, outputCode) {
     const response = await gTranslate(content, { to: outputCode });
 
     return {
-      input: response.from.text.value || content,
+      input: response.from.text?.value || content,
       output: response.text,
       inputCode: response.from.language.iso,
-      outputCode: outputCode,
+      outputCode,
       inputLang: ISO6391.getName(response.from.language.iso) || "Unknown",
       outputLang: ISO6391.getName(outputCode) || "Unknown",
     };
   } catch (ex) {
     error("translate", ex);
-    debug(`Failed to translate content: "${content}" to language code: "${outputCode}"`);
+    debug(`Failed to translate content: "${content}" to "${outputCode}"`);
     return null;
   }
 }
@@ -95,11 +90,9 @@ async function postToBin(content, title) {
           languageId: "text",
         },
       ],
-      {
-        title,
-        description: " ",
-      }
+      { title, description: " " }
     );
+
     return {
       url: response.url,
       short: response.short,
@@ -107,6 +100,7 @@ async function postToBin(content, title) {
     };
   } catch (ex) {
     error(`postToBin`, ex);
+    return { url: null, short: null, raw: null };
   }
 }
 
