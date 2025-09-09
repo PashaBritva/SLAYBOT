@@ -1,8 +1,8 @@
 ---
-description: 6 commands
+description: 14 commands
 ---
 
-# 🪙 Economy
+# 📊 Economy
 
 | Command                                | Slash                | Description                           |
 | -------------------------------------- | -------------------- | ------------------------------------- |
@@ -17,3 +17,6 @@ description: 6 commands
 | **!shop list**                         | **/shop list**       | show all items in the server shop     |
 | **!shop buy \<name>**                  | **/shop buy**        | buy an item from the server shop      |
 | **!shop sell \<name>**                 | **/shop sell**       | sell an item back to the server shop  |
+| **!auction create \<startprice> \<duration> \[role/channel/user/custom]** | **/auction create** | создать аукцион с указанием стартовой цены и длительности |
+| **!auction bid \<amount>**                                                | **/auction bid**    | сделать ставку                                            |
+| **!auction end**                                                          | **/auction end**    | завершить аукцион вручную                                 |
