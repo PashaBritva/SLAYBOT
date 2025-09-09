@@ -86,7 +86,7 @@ async function handleFlagReaction(countryCode, message, user) {
       })
     );
 
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(message.client.config.EMBED_COLORS.BOT_EMBED)
       .setAuthor({ name: `Translation from ${src}` })
       .setDescription(desc)

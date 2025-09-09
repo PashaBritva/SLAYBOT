@@ -46,7 +46,7 @@ function nowPlaying({ client, guildId }) {
   const track = player.queue.current;
   const end = track.duration > 6.048e8 ? "🔴 LIVE" : new Date(track.duration).toISOString().slice(11, 19);
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setAuthor("Now Playing ♪", client.user.displayAvatarURL())
     .addField(`Playing`,`[${track.title}](${track.uri})`)

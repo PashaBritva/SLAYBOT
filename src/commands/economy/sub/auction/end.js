@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const Auction = require("@schemas/Auction");
 
 module.exports = async (interaction, auto = false) => {
@@ -33,7 +33,7 @@ module.exports = async (interaction, auto = false) => {
     result = "❌ Никто не сделал ставку.";
   }
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("⏹ Аукцион завершён")
     .setColor("RED")
     .setDescription(`> Лот: **${itemDisplay}**\n${result}`);

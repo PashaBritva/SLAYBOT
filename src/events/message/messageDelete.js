@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getSettings } = require("@schemas/Guild");
 const { sendMessage } = require("@utils/botUtils");
 
@@ -19,7 +19,7 @@ module.exports = async (client, message) => {
     const logChannel = message.guild.channels.cache.get(settings.modlog_channel);
     if (!logChannel) return;
 
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setAuthor({ name: "Ghost ping detected" })
       .setDescription(
         `**Message:**\n${message.content}\n\n` +

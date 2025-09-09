@@ -207,8 +207,8 @@ module.exports = class BlockServerCommand extends Command {
       }, duration);
     }
 
-    const { MessageEmbed } = require("discord.js");
-    const embed = new MessageEmbed()
+    const { EmbedBuilder } = require("discord.js");
+    const embed = new EmbedBuilder()
       .setTitle("🚫 Server Blocked")
       .setColor(isPermanent ? "#FF4444" : "#FFA500")
       .setDescription("Server has been successfully added to the blacklist")

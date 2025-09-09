@@ -87,7 +87,7 @@ async function getXpLeaderboard({ guild }, author) {
     }
   }
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "XP Leaderboard" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(collector)
@@ -113,7 +113,7 @@ async function getInviteLeaderboard({ guild }, author) {
     }
   }
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Invite Leaderboard" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(collector)

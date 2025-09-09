@@ -50,7 +50,7 @@ async function getInviteRanks({ guild }) {
     }
   });
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Invite Ranks" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(str);

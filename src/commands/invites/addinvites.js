@@ -71,7 +71,7 @@ async function addInvites({ guild }, user, amount) {
   memberDb.invite_data.added += amount;
   await memberDb.save();
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: `Added invites to ${user.username}` })
     .setThumbnail(user.displayAvatarURL())
     .setColor(EMBED_COLORS.BOT_EMBED)

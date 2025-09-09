@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const Auction = require("@schemas/Auction");
 
 module.exports = async (ctx, client, args = []) => {
@@ -55,7 +55,7 @@ module.exports = async (ctx, client, args = []) => {
     type === "channel" ? `<#${item}>` :
     type === "user" ? `<@${item}>` : item;
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("📦 Новый аукцион!")
     .setColor("GOLD")
     .setDescription(

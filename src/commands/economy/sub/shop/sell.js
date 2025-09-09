@@ -1,5 +1,5 @@
 const ServerShop = require("@schemas/Shop");
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const { ECONOMY } = require("@root/config");
 const TemporaryRole = require("@schemas/TemporaryRoles");

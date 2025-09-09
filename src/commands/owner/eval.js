@@ -85,7 +85,7 @@ module.exports = class Eval extends Command {
 };
 
 const buildSuccessResponse = (output) => {
-  const embed = new MessageEmbed();
+  const embed = new EmbedBuilder();
   
   let outputStr;
   if (typeof output === "string") {
@@ -104,7 +104,7 @@ const buildSuccessResponse = (output) => {
 };
 
 const buildErrorResponse = (err) => {
-  const embed = new MessageEmbed();
+  const embed = new EmbedBuilder();
   
   let errStr;
   if (typeof err === "string") {

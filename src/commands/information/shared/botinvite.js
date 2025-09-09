@@ -2,7 +2,7 @@ const { MessageEmbed, MessageButton, MessageActionRow } = require("discord.js");
 const { EMBED_COLORS, SUPPORT_SERVER, DASHBOARD } = require("@root/config");
 
 module.exports = (client) => {
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Invite" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(client.user.displayAvatarURL())

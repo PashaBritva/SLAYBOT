@@ -1,6 +1,6 @@
 const { EMBED_COLORS } = require("@root/config");
 const ServerShop = require("@schemas/Shop");
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 
 module.exports = async function removeitem(guildId, name) {
   const shop = await ServerShop.findOne({ guildId });

@@ -1,6 +1,6 @@
 const { EMBED_COLORS, ECONOMY } = require("@root/config");
 const ServerShop = require("@schemas/Shop");
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 
 module.exports = async function listitems(guildId) {
   const shop = await ServerShop.findOne({ guildId });
@@ -8,7 +8,7 @@ module.exports = async function listitems(guildId) {
     return new MessageEmbed().setColor("YELLOW").setTitle("🛒 Shop Empty").setDescription("There are no items in the shop.");
   }
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setTitle("🛍️ Server Shop")
     .setDescription("Items available in this server:");

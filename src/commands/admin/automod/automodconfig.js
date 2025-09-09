@@ -197,7 +197,7 @@ async function getStatus(settings, guild) {
     ],
   });
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription("```" + asciiTable + "```")
     .addField("Log Channel", logChannel, true)

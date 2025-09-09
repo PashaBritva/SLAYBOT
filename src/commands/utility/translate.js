@@ -80,7 +80,7 @@ async function getTranslation(author, input, outputCode) {
   const data = await translate(input, outputCode);
   if (!data) return "Failed to translate your text";
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({
       name: `${author.username} says`,
       iconURL: author.avatarURL(),

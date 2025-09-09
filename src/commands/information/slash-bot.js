@@ -69,7 +69,7 @@ module.exports = class BotCommand extends Command {
 };
 
 function botInvite(client) {
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Invite" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(client.user.displayAvatarURL())

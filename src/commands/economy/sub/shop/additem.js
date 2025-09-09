@@ -1,7 +1,7 @@
 const { ECONOMY } = require("@root/config");
 const ServerShop = require("@schemas/Shop");
 const TemporaryRoles = require("@schemas/TemporaryRoles");
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 
 module.exports = async function additem(guildId, name, price, roleId = null, duration = null) {
   let shop = await ServerShop.findOne({ guildId });

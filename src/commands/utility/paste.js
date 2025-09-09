@@ -61,7 +61,7 @@ async function paste(content, title) {
   const response = await postToBin(content, title);
   if (!response) return "❌ Something went wrong";
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Paste links" })
     .setDescription(`🔸 Normal: ${response.url}\n🔹 Raw: ${response.raw}`);
 

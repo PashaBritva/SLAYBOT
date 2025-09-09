@@ -76,7 +76,7 @@ async function getGithubUser(target, author) {
   let website = websiteProvided(blog) ? `[Click me](${blog})` : "Not Provided";
   if (website == null) website = "Not Provided";
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({
       name: `GitHub User: ${username}`,
       url: userPageLink,

@@ -59,7 +59,7 @@ async function weather(place) {
   const json = response.data;
   if (!json.request) return `No city found matching \`${place}\``;
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("Weather")
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(json.current?.weather_icons[0])

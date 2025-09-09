@@ -73,7 +73,7 @@ async function beg(user) {
   userDb.coins += amount;
   await userDb.save();
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setAuthor({ name: `${user.username}`, iconURL: user.displayAvatarURL() })
     .setDescription(

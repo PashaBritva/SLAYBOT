@@ -294,7 +294,7 @@ module.exports = class ShopCommand extends Command {
   }
 
   errorEmbed(description, msg) {
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor("RED")
       .setTitle("❌ Error")
       .setDescription(description)

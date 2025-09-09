@@ -129,7 +129,7 @@ components.push(new MessageButton().setLabel("Invite Link").setURL(client.getInv
  
   let buttonsRow = new MessageActionRow().addComponents(components);
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
 //  .setImage("https://cdn.discordapp.com/attachments/965654226187460629/980773092307664926/09611780-c857-11eb-859d-0761b6537103.jpeg")  .setThumbnail(client.user.displayAvatarURL())
     .setDescription(
@@ -230,7 +230,7 @@ function getSlashCategoryEmbeds(client, category) {
     collector +=
       "**Available Filters:**\n" + `${availableFilters}` + `*\n\n**Available Generators**\n` + `${availableGens}`;
 
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })
@@ -243,7 +243,7 @@ function getSlashCategoryEmbeds(client, category) {
   const commands = Array.from(client.slashCommands.filter((cmd) => cmd.category === category).values());
 
   if (commands.length === 0) {
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })
@@ -271,7 +271,7 @@ function getSlashCategoryEmbeds(client, category) {
   }
 
   arrSplitted.forEach((item, index) => {
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })
@@ -309,7 +309,7 @@ function getMsgCategoryEmbeds(client, category, prefix) {
       `**${prefix}cmd <url>:** Picks image from provided URL\n` +
       `**${prefix}cmd [attachment]:** Picks attachment image`;
 
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })
@@ -322,7 +322,7 @@ function getMsgCategoryEmbeds(client, category, prefix) {
   const commands = client.commands.filter((cmd) => cmd.category === category);
 
   if (commands.length === 0) {
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })
@@ -341,7 +341,7 @@ function getMsgCategoryEmbeds(client, category, prefix) {
   }
 
   arrSplitted.forEach((item, index) => {
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setColor(EMBED_COLORS.BOT_EMBED)
       .setThumbnail(CommandCategory[category]?.image)
       .setAuthor({ name: `${category} Commands` })

@@ -57,7 +57,7 @@ async function getInvites({ guild }, user) {
 
   const inviteData = (await getMember(guild.id, user.id)).invite_data;
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: `Invites for ${user.username}` })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(user.displayAvatarURL())

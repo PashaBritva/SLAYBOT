@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const prettyMs = require("pretty-ms");
 const { sendMessage } = require("@utils/botUtils");
 
@@ -12,7 +12,7 @@ const { sendMessage } = require("@utils/botUtils");
 module.exports = (client, player, track, payload) => {
   const channel = client.channels.cache.get(player.textChannel);
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Now Playing" })
     .setColor(client.config.EMBED_COLORS.BOT_EMBED)
     .setDescription(`[${track.title}](${track.uri})`)

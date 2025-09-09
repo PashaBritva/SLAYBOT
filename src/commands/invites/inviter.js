@@ -62,7 +62,7 @@ async function getInviter({ guild }, user) {
   const inviter = await guild.client.users.fetch(inviteData.inviter, false, true);
   const inviterData = (await getMember(guild.id, inviteData.inviter)).invite_data;
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setAuthor({ name: `Invite data for ${user.username}` })
     .setDescription(

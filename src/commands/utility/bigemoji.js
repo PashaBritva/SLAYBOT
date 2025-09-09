@@ -53,7 +53,7 @@ module.exports = class BigEmoji extends Command {
 function getEmoji(user, emoji) {
   const custom = Util.parseEmoji(emoji);
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "❯ Big Emoji ❮" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setFooter({ text: `Requested by ${user.tag}` });

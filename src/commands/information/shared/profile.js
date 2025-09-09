@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getSettings } = require("@schemas/Guild");
 const { getUser } = require("@schemas/User");
 const { getMember } = require("@schemas/Member");
@@ -9,7 +9,7 @@ module.exports = async ({ guild }, user) => {
   const memberData = await getMember(guild.id, user.id);
   const userData = await getUser(user.id);
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setThumbnail(user.displayAvatarURL())
     .setColor(EMBED_COLORS.BOT_EMBED)
     .addField("User Tag", user.tag, true)

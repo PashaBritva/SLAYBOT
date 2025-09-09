@@ -59,7 +59,7 @@ async function getCovid(country) {
   const { data } = response;
 
   const mg = timestampToDate(data?.updated, "dd.MM.yyyy at HH:mm");
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle(`Covid - ${data?.country}`)
     .setThumbnail(data?.countryInfo.flag)
     .setColor(EMBED_COLORS.BOT_EMBED)

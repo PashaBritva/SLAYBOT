@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { permissions, sendMessage, parsePermissions } = require("@utils/botUtils");
 const { EMBED_COLORS, PREFIX, OWNER_IDS } = require("@root/config.js");
 const { timeformat } = require("@utils/miscUtils");
@@ -280,7 +280,7 @@ class Command {
       if (this.cooldown) desc += `\n**Cooldown:** ${timeformat(this.cooldown)}`;
     }
 
-    const embed = new MessageEmbed().setColor(EMBED_COLORS.BOT_EMBED).setDescription(desc);
+    const embed = new EmbedBuilder().setColor(EMBED_COLORS.BOT_EMBED).setDescription(desc);
     if (title) embed.setAuthor({ name: title });
     return embed;
   }
@@ -312,7 +312,7 @@ class Command {
       desc += `\n**Cooldown:** ${timeformat(this.cooldown)}`;
     }
 
-    const embed = new MessageEmbed().setColor(EMBED_COLORS.BOT_EMBED).setDescription(desc);
+    const embed = new EmbedBuilder().setColor(EMBED_COLORS.BOT_EMBED).setDescription(desc);
     return embed;
   }
 

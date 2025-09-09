@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getSettings } = require("@schemas/Guild");
 const { sendMessage } = require("@utils/botUtils");
 
@@ -91,7 +91,7 @@ const buildGreeting = async (member, type, config, inviterData) => {
   if (config.content) content = await parse(config.content, member, inviterData);
 
   // Build embed
-  const embed = new MessageEmbed();
+  const embed = new EmbedBuilder();
   if (config.embed?.description) {
     embed.setDescription(await parse(config.embed.description, member, inviterData));
   }

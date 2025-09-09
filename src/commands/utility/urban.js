@@ -59,7 +59,7 @@ async function urban(word) {
   if (!json.list[0]) return `Nothing found matching \`${word}\``;
 
   const data = json.list[0];
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle(data.word)
     .setURL(data.permalink)
     .setColor(EMBED_COLORS.BOT_EMBED)

@@ -32,7 +32,7 @@ module.exports = (client) => {
   desc += `❒ Websocket Ping: ${client.ws.ping} ms\n`;
   desc += "\n";
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("Bot Information")
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(client.user.displayAvatarURL())

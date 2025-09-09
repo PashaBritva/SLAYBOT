@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { sendMessage, safeDM } = require("@utils/botUtils");
 const { containsLink, containsDiscordInvite } = require("@utils/miscUtils");
 const { getMember } = require("@schemas/Member");
@@ -38,7 +38,7 @@ async function performAutomod(message, settings) {
   let shouldDelete = false;
   let strikesTotal = 0;
 
-  const embed = new MessageEmbed();
+  const embed = new EmbedBuilder();
 
   // Max mentions
   if (mentions.members.size > automod.max_mentions) {

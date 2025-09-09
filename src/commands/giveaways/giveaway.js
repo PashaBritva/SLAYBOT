@@ -305,7 +305,7 @@ async function runInteractiveSetup(message) {
   const SETUP_PERMS = ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"];
 
   const filter = (m) => m.author.id === member.id;
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Giveaway Setup" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setFooter({ text: "Type cancel to cancel setup" });
@@ -394,7 +394,7 @@ async function runInteractiveEdit(message) {
   const SETUP_TIMEOUT = 30 * 1000;
 
   const filter = (m) => m.author.id === member.id;
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setAuthor({ name: "Giveaway Update" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setFooter({ text: "Type `cancel` to cancel update!\nType `skip` to skip this step" });

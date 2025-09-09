@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getSettings } = require("@schemas/Guild");
 
 /**
@@ -15,7 +15,7 @@ module.exports = async (client, guild) => {
   if (!client.joinLeaveWebhook) return;
 
   const owner = await client.users.fetch(guild.ownerId);
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("Guild Left")
     .setThumbnail(guild.iconURL())
     .setColor(client.config.EMBED_COLORS.ERROR)

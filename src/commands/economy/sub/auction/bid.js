@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const Auction = require("@schemas/Auction");
 const { getUser } = require("@schemas/User");
 const { EMBED_COLORS, ECONOMY } = require("@root/config");
@@ -34,7 +34,7 @@ module.exports = async (interaction) => {
     auction.type === "channel" ? `<#${auction.item}>` :
     auction.type === "user" ? `<@${auction.item}>` : auction.item;
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle("💰 Новая ставка!")
     .setColor("GREEN")
     .setDescription(

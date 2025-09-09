@@ -1,4 +1,4 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const ServerShop = require("@schemas/Shop");
 const { ECONOMY, EMBED_COLORS } = require("@root/config");

@@ -58,7 +58,7 @@ async function pokedex(pokemon) {
 
   const json = response.data[0];
 
-  const embed = new MessageEmbed()
+  const embed = new EmbedBuilder()
     .setTitle(`Pokédex - ${json.name}`)
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setThumbnail(json.sprite)
