@@ -1,15 +1,15 @@
 const { Command } = require("@src/structures");
-const { MessageEmbed, Message, CommandInteraction } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const { postToBin } = require("@utils/httpUtils");
 
 module.exports = class PasteCommand extends Command {
   constructor(client) {
     super(client, {
       name: "paste",
-      description: "Paste something in sourceb.in",
+      description: "Paste something to sourceb.in",
       cooldown: 5,
       category: "UTILITY",
-      botPermissions: ["EMBED_LINKS"],
+      botPermissions: ["EmbedLinks"],
       command: {
         enabled: true,
         minArgsCount: 2,
@@ -20,15 +20,15 @@ module.exports = class PasteCommand extends Command {
         options: [
           {
             name: "title",
-            description: "title for your content",
+            description: "Title for your paste",
             required: true,
-            type: "STRING",
+            type: ApplicationCommandOptionType.String,
           },
           {
             name: "content",
-            description: "content to be posted to bin",
-            type: "STRING",
+            description: "Content to be pasted",
             required: true,
+            type: ApplicationCommandOptionType.String,
           },
         ],
       },
@@ -36,34 +36,35 @@ module.exports = class PasteCommand extends Command {
   }
 
   /**
-   * @param {Message} message
+   * @param {import("discord.js").Message} message
    * @param {string[]} args
    */
   async messageRun(message, args) {
     const title = args.shift();
     const content = args.join(" ");
     const response = await paste(content, title);
-    await message.reply(response);
+    return message.reply(response);
   }
 
   /**
-   * @param {CommandInteraction} interaction
+   * @param {import("discord.js").CommandInteraction} interaction
    */
   async interactionRun(interaction) {
     const title = interaction.options.getString("title");
     const content = interaction.options.getString("content");
     const response = await paste(content, title);
-    await interaction.followUp(response);
+    return interaction.followUp(response);
   }
 };
 
 async function paste(content, title) {
   const response = await postToBin(content, title);
-  if (!response) return "❌ Something went wrong";
+  if (!response) return "❌ Something went wrong while creating paste";
 
   const embed = new EmbedBuilder()
-    .setAuthor({ name: "Paste links" })
-    .setDescription(`🔸 Normal: ${response.url}\n🔹 Raw: ${response.raw}`);
+    .setTitle("📑 Paste Created")
+    .setColor("Random")
+    .setDescription(`🔸 [View Online](${response.url})\n🔹 [Raw](${response.raw})`);
 
   return { embeds: [embed] };
 }

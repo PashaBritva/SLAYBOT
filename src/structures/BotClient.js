@@ -12,11 +12,12 @@ const fs = require("fs");
 const { table } = require("table");
 const mongoose = require("mongoose");
 const logger = require("../helpers/logger");
+const error = require("../helpers/logger");
 const MusicManager = require("./MusicManager");
 const Command = require("./Command");
 const BaseContext = require("./BaseContext");
 const GiveawayManager = require("./GiveawayManager");
-const convertSlashCommands = require("@utils/convertSlashTypes");
+const { convertSlashCommands, convertOptions } = require("@utils/convertSlashTypes");
 
 module.exports = class BotClient extends Client {
   constructor() {
@@ -30,28 +31,18 @@ module.exports = class BotClient extends Client {
         GatewayIntentBits.GuildVoiceStates,
       ],
       partials: [Partials.User, Partials.Message, Partials.Reaction],
-      allowedMentions: {
-        repliedUser: false,
-      },
-      rest: {
-        timeout: 20000,
-      },
+      allowedMentions: { repliedUser: false },
+      rest: { timeout: 20000 },
     });
 
     this.config = require("@root/config");
 
-    /** @type {Command[]} */
     this.commands = [];
     this.commandIndex = new Collection();
-
-    /** @type {Collection<string, Command>} */
     this.slashCommands = new Collection();
-
-    /** @type {Collection<string, BaseContext>} */
     this.contextMenus = new Collection();
     this.counterUpdateQueue = [];
 
-    // initialize cache
     this.cmdCooldownCache = new Collection();
     this.ctxCooldownCache = new Collection();
     this.xpCooldownCache = new Collection();
@@ -59,18 +50,12 @@ module.exports = class BotClient extends Client {
     this.antiScamCache = new Collection();
     this.flagTranslateCache = new Collection();
 
-    // initialize webhook for sending guild join/leave details
     this.joinLeaveWebhook = process.env.JOIN_LEAVE_LOGS
       ? new WebhookClient({ url: process.env.JOIN_LEAVE_LOGS })
       : undefined;
 
-    // Music Player
     this.musicManager = new MusicManager(this);
-
-    // Giveaways
     this.giveawaysManager = new GiveawayManager(this);
-
-    // Logger
     this.logger = logger;
   }
 
@@ -82,33 +67,23 @@ module.exports = class BotClient extends Client {
 
   getAbsoluteFilePaths(directory) {
     const filePaths = [];
-    const readCommands = (dir) => {
+    const readDir = (dir) => {
       const files = fs.readdirSync(path.join(__appRoot, dir));
       files.forEach((file) => {
         const stat = fs.lstatSync(path.join(__appRoot, dir, file));
-        if (stat.isDirectory()) {
-          readCommands(path.join(dir, file));
-        } else {
-          const extension = path.extname(file);
-          if (extension !== ".js") {
-            this.logger.debug(`Skipping ${file}: not a js file`);
-            return;
-          }
-          const filePath = path.join(__appRoot, dir, file);
-          filePaths.push(filePath);
-        }
+        if (stat.isDirectory()) return readDir(path.join(dir, file));
+        if (path.extname(file) === ".js") filePaths.push(path.join(__appRoot, dir, file));
+        else this.logger.debug(`Skipping ${file}: not a js file`);
       });
     };
-    readCommands(directory);
+    readDir(directory);
     return filePaths;
   }
 
   loadEvents(directory) {
     this.logger.log(`Loading events...`);
-    let success = 0;
-    let failed = 0;
-    const clientEvents = [];
-    const musicEvents = [];
+    let success = 0, failed = 0;
+    const clientEvents = [], musicEvents = [];
 
     this.getAbsoluteFilePaths(directory).forEach((filePath) => {
       const file = path.basename(filePath);
@@ -116,43 +91,22 @@ module.exports = class BotClient extends Client {
       try {
         const eventName = path.basename(file, ".js");
         const event = require(filePath);
-
-        if (dirName === "music") {
-          this.musicManager.on(eventName, event.bind(null, this));
-          musicEvents.push([file, "✓"]);
-        } else {
-          this.on(eventName, event.bind(null, this));
-          clientEvents.push([file, "✓"]);
-        }
-
+        if (dirName === "music") this.musicManager.on(eventName, event.bind(null, this)), musicEvents.push([file, "✓"]);
+        else this.on(eventName, event.bind(null, this)), clientEvents.push([file, "✓"]);
         delete require.cache[require.resolve(filePath)];
-        success += 1;
+        success++;
       } catch (ex) {
-        failed += 1;
+        failed++;
         this.logger.error(`loadEvent - ${file}`, ex);
       }
     });
 
-    console.log(
-      table(clientEvents, {
-        header: { alignment: "center", content: "Client Events" },
-        singleLine: true,
-        columns: [{ width: 25 }, { width: 5, alignment: "center" }],
-      })
-    );
-
-    console.log(
-      table(musicEvents, {
-        header: { alignment: "center", content: "Music Events" },
-        singleLine: true,
-        columns: [{ width: 25 }, { width: 5, alignment: "center" }],
-      })
-    );
-
+    console.log(table(clientEvents, { header: { alignment: "center", content: "Client Events" }, singleLine: true, columns: [{ width: 25 }, { width: 5, alignment: "center" }] }));
+    console.log(table(musicEvents, { header: { alignment: "center", content: "Music Events" }, singleLine: true, columns: [{ width: 25 }, { width: 5, alignment: "center" }] }));
     this.logger.log(`Loaded ${success + failed} events. Success (${success}) Failed (${failed})`);
   }
 
-  getCommand(invoke) {
+  getCommand(invoke) { 
     const index = this.commandIndex.get(invoke.toLowerCase());
     return index !== undefined ? this.commands[index] : undefined;
   }
@@ -160,25 +114,19 @@ module.exports = class BotClient extends Client {
   loadCommand(cmd) {
     if (cmd.command?.enabled) {
       const index = this.commands.length;
-      if (this.commandIndex.has(cmd.name)) {
-        throw new Error(`Command ${cmd.name} already registered`);
-      }
+      if (this.commandIndex.has(cmd.name)) throw new Error(`Command ${cmd.name} already registered`);
       cmd.command.aliases.forEach((alias) => {
         if (this.commandIndex.has(alias)) throw new Error(`Alias ${alias} already registered`);
         this.commandIndex.set(alias.toLowerCase(), index);
       });
       this.commandIndex.set(cmd.name.toLowerCase(), index);
       this.commands.push(cmd);
-    } else {
-      this.logger.debug(`Skipping command ${cmd.name}. Disabled!`);
-    }
+    } else this.logger.debug(`Skipping command ${cmd.name}. Disabled!`);
 
     if (cmd.slashCommand?.enabled) {
       if (this.slashCommands.has(cmd.name)) throw new Error(`Slash Command ${cmd.name} already registered`);
       this.slashCommands.set(cmd.name, cmd);
-    } else {
-      this.logger.debug(`Skipping slash command ${cmd.name}. Disabled!`);
-    }
+    } else this.logger.debug(`Skipping slash command ${cmd.name}. Disabled!`);
   }
 
   loadCommands(directory) {
@@ -214,6 +162,7 @@ module.exports = class BotClient extends Client {
         this.logger.error(`Context: Failed to load ${file} Reason: ${ex.message}`);
       }
     });
+
     const userContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.User).size;
     const messageContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.Message).size;
 
@@ -225,41 +174,43 @@ module.exports = class BotClient extends Client {
   }
 
   async registerInteractions(guildId) {
-    const toRegister = [];
-
-    if (this.config.INTERACTIONS.SLASH) {
-      convertSlashCommands(this.slashCommands);
+    for (const cmd of this.slashCommands.values()) {
+      if (cmd.slashCommand?.options) {
+        cmd.slashCommand.options = convertOptions(cmd.slashCommand.options);
+        for (const opt of cmd.slashCommand.options) {
+          if (!Object.values(ApplicationCommandOptionType).includes(opt.type)) {
+            throw new error(`Invalid option type in command ${cmd.name}: ${opt.type}`);
+          }
+        }
+      }
     }
 
+    const toRegister = [];
+
+    if (this.config.INTERACTIONS.SLASH) convertSlashCommands(this.slashCommands);
+
     if (this.config.INTERACTIONS.SLASH) {
-      this.slashCommands
-        .map((cmd) => ({
-          name: cmd.name,
-          description: cmd.description,
-          type: ApplicationCommandType.ChatInput,
-          options: cmd.slashCommand.options,
-        }))
-        .forEach((s) => toRegister.push(s));
+      this.slashCommands.map((cmd) => ({
+        name: cmd.name,
+        description: cmd.description,
+        type: ApplicationCommandType.ChatInput,
+        options: cmd.slashCommand.options,
+      })).forEach((s) => toRegister.push(s));
     }
 
     if (this.config.INTERACTIONS.CONTEXT) {
-      this.contextMenus
-        .map((ctx) => ({
-          name: ctx.name,
-          type: ctx.type,
-        }))
-        .forEach((c) => toRegister.push(c));
+      this.contextMenus.map((ctx) => ({
+        name: ctx.name,
+        type: ctx.type,
+      })).forEach((c) => toRegister.push(c));
     }
 
-    if (!guildId) {
-      await this.application.commands.set(toRegister);
-    } else if (typeof guildId === "string") {
+    if (!guildId) await this.application.commands.set(toRegister);
+    else if (typeof guildId === "string") {
       const guild = this.guilds.cache.get(guildId);
       if (!guild) throw new Error(`No guilds found matching ${guildId}`);
       await guild.commands.set(toRegister);
-    } else {
-      throw new Error(`Did you provide a valid guildId to register slash commands`);
-    }
+    } else throw new Error(`Did you provide a valid guildId to register slash commands`);
 
     this.logger.success("Successfully registered slash commands");
   }

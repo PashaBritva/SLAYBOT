@@ -4,6 +4,7 @@ const transfer = require("../transfer");
 const { getUser } = require("@schemas/User");
 const { ECONOMY } = require("@root/config");
 const TemporaryRole = require("@schemas/TemporaryRoles");
+const { error } = require("@src/helpers/logger");
 
 module.exports = async function buy(guildId, user, name) {
   const shop = await ServerShop.findOne({ guildId });
@@ -65,8 +66,8 @@ module.exports = async function buy(guildId, user, name) {
       } else {
         roleInfo = " (Role not found - contact admin)";
       }
-    } catch (error) {
-      console.error("Error giving role:", error);
+    } catch (err) {
+      error("Error giving role:", err);
       roleInfo = " (Failed to give role - contact admin)";
     }
   }

@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const Auction = require("@schemas/Auction");
+const { error } = require("@src/helpers/logger");
 
 module.exports = async (interaction, auto = false) => {
   const auction = await Auction.findOne({ guildId: interaction.guild.id, active: true });
@@ -27,7 +28,7 @@ module.exports = async (interaction, auto = false) => {
         await channel.permissionOverwrites.edit(auction.highestBidder, { VIEW_CHANNEL: true });
       }
     } catch (e) {
-      console.error("Auction reward error:", e);
+      error("Auction reward error:", e);
     }
   } else {
     result = "❌ Никто не сделал ставку.";

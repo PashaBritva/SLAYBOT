@@ -1,3 +1,5 @@
+const { error } = require("@src/helpers/logger");
+
 /**
  * @param {import('discord.js').GuildMember} member
  * @param {string} messageId
@@ -24,12 +26,12 @@ module.exports = async (member, messageId) => {
   try {
     await giveaway.end();
     return "Success! The giveaway has ended!";
-  } catch (error) {
+  } catch (err) {
     if (member.client.logger) {
-      member.client.logger.error("Giveaway End", error);
+      member.client.logger.error("Giveaway End", err);
     } else {
-      console.error("Giveaway End Error:", error);
+      error("Giveaway End Error:", err);
     }
-    return `An error occurred while ending the giveaway: ${error.message}`;
+    return `An error occurred while ending the giveaway: ${err.message}`;
   }
 };

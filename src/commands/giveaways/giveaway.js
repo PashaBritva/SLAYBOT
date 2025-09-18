@@ -2,6 +2,7 @@ const { Command } = require("@src/structures");
 const { Message, CommandInteraction, MessageEmbed } = require("discord.js");
 const { parsePermissions } = require("@utils/botUtils");
 const { EMBED_COLORS } = require("@root/config");
+const { error } = require("@src/helpers/logger");
 
 // Sub Commands
 const start = require("./sub/start");
@@ -282,8 +283,8 @@ module.exports = class Giveaway extends Command {
       } else {
         response = "Invalid subcommand";
       }
-    } catch (error) {
-      console.error("Error in giveaway command:", error);
+    } catch (err) {
+      error("Error in giveaway command:", err);
       response = "An unexpected error occurred.";
     }
 

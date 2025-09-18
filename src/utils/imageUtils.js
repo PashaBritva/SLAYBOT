@@ -13,17 +13,20 @@ async function getImageFromCommand(message, args) {
   // check for attachments
   if (message.attachments.size > 0) {
     const attachment = message.attachments.first();
-    const attachUrl = attachment.url;
-    const attachIsImage = attachUrl.endsWith(".png") || attachUrl.endsWith(".jpg") || attachUrl.endsWith(".jpeg");
-    if (attachIsImage) url = attachUrl;
+    if (attachment?.contentType?.startsWith("image/")) {
+      url = attachment.url;
+    }
   }
 
   if (!url && args.length === 0) url = message.author.displayAvatarURL({ size: 256, format: "png" });
 
   if (!url && args.length !== 0) {
     try {
-      url = new URL(args[0]).href;
-    } catch (ex) {}
+      const parsed = new URL(args[0]);
+      if (["http:", "https:"].includes(parsed.protocol)) {
+        url = parsed.href;
+      }
+    } catch {}
   }
 
   if (!url && message.mentions.users.size > 0) {

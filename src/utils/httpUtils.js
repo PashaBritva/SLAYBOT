@@ -10,7 +10,8 @@ const gTranslate = require("@vitalets/google-translate-api");
 async function getJson(url) {
   try {
     const response = await fetch(url);
-    const json = await response.json();
+    const json = await response.json().catch(() => null);
+
     return {
       success: response.ok,
       status: response.status,
@@ -19,7 +20,7 @@ async function getJson(url) {
   } catch (ex) {
     debug(`Url: ${url}`);
     error(`getJson`, ex);
-    return { success: false };
+    return { success: false, status: 500, data: null };
   }
 }
 
@@ -31,6 +32,7 @@ async function getBuffer(url) {
   try {
     const response = await fetch(url);
     const buffer = Buffer.from(await response.arrayBuffer());
+
     return {
       success: response.ok,
       status: response.status,
@@ -39,7 +41,7 @@ async function getBuffer(url) {
   } catch (ex) {
     debug(`Url: ${url}`);
     error(`getBuffer`, ex);
-    return { success: false };
+    return { success: false, status: 500, buffer: null };
   }
 }
 
@@ -61,11 +63,11 @@ async function translate(content, outputCode) {
     const response = await gTranslate(content, { to: outputCode });
 
     return {
-      input: response.from.text?.value || content,
+      input: response.from?.text?.value || content,
       output: response.text,
-      inputCode: response.from.language.iso,
+      inputCode: response.from?.language?.iso || "auto",
       outputCode,
-      inputLang: ISO6391.getName(response.from.language.iso) || "Unknown",
+      inputLang: ISO6391.getName(response.from?.language?.iso) || "Unknown",
       outputLang: ISO6391.getName(outputCode) || "Unknown",
     };
   } catch (ex) {
@@ -95,7 +97,7 @@ async function postToBin(content, title) {
 
     return {
       url: response.url,
-      short: response.short,
+      short: response.short || response.shortened || null,
       raw: `https://cdn.sourceb.in/bins/${response.key}/0`,
     };
   } catch (ex) {

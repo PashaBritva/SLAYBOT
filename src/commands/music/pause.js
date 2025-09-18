@@ -1,5 +1,4 @@
 const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
 const { musicValidations } = require("@utils/botUtils");
 
 module.exports = class Pause extends Command {
@@ -9,37 +8,25 @@ module.exports = class Pause extends Command {
       description: "pause the music player",
       category: "MUSIC",
       validations: musicValidations,
-      command: {
-        enabled: true,
-      },
-      slashCommand: {
-        enabled: true,
-      },
+      command: { enabled: true },
+      slashCommand: { enabled: true },
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
-    const response = pause(message);
-    await message.reply(response);
+  async messageRun(message) {
+    await message.reply(togglePause(message, true));
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
-    const response = pause(interaction);
-    await interaction.followUp(response);
+    await interaction.followUp(togglePause(interaction, true));
   }
 };
 
-function pause({ client, guildId }) {
+function togglePause({ client, guildId }, pauseState) {
   const player = client.musicManager.get(guildId);
-  if (player.paused) return "The player is already paused.";
+  if (!player) return "> 🚫 There is no active music player in this guild.";
+  if (player.paused === pauseState) return `> The player is already ${pauseState ? "paused" : "resumed"}.`;
 
-  player.pause(true);
-  return "⏸️ Paused the music player.";
+  player.pause(pauseState);
+  return pauseState ? "> ⏸️ Paused the music player." : "> ▶️ Resumed the music player.";
 }

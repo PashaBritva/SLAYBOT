@@ -1,12 +1,8 @@
 const { Collection, EmbedBuilder, PermissionsBitField } = require("discord.js");
 const { EMBED_COLORS } = require("@root/config");
-
-// Utils
 const { sendMessage } = require("@utils/botUtils");
 const { containsLink } = require("@utils/miscUtils");
 const { error } = require("../helpers/logger");
-
-// Schemas
 const { getSettings } = require("@schemas/Guild");
 const { getMember } = require("@schemas/Member");
 const { addModLogToDb } = require("@schemas/ModLog");

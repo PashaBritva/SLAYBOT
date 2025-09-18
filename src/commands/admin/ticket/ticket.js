@@ -1,4 +1,4 @@
-const { MessageEmbed, Message, MessageActionRow, MessageButton, CommandInteraction } = require("discord.js");
+const { MessageEmbed, Message, ActionRowBuilder, ButtonBuilder, CommandInteraction } = require("discord.js");
 const { Command } = require("@src/structures");
 const { EMBED_COLORS } = require("@root/config.js");
 
@@ -375,8 +375,8 @@ async function setupTicket(guild, channel, title, role, color) {
 
     if (color) embed.setColor(color);
 
-    const row = new MessageActionRow().addComponents(
-      new MessageButton().setLabel("Open a ticket").setCustomId("TICKET_CREATE").setStyle("SUCCESS")
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setLabel("Open a ticket").setCustomId("TICKET_CREATE").setStyle("SUCCESS")
     );
 
     const tktMessage = await channel.send({ embeds: [embed], components: [row] });

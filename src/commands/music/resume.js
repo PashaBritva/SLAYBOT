@@ -1,5 +1,4 @@
 const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
 const { musicValidations } = require("@utils/botUtils");
 
 module.exports = class Resume extends Command {
@@ -9,36 +8,23 @@ module.exports = class Resume extends Command {
       description: "resumes the music player",
       category: "MUSIC",
       validations: musicValidations,
-      command: {
-        enabled: true,
-      },
-      slashCommand: {
-        enabled: true,
-      },
+      command: { enabled: true },
+      slashCommand: { enabled: true },
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
-    const response = resumePlayer(message);
-    await message.reply(response);
+  async messageRun(message) {
+    await message.reply(resumePlayer(message));
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
-    const response = resumePlayer(interaction);
-    await interaction.followUp(response);
+    await interaction.followUp(resumePlayer(interaction));
   }
 };
 
 function resumePlayer({ client, guildId }) {
   const player = client.musicManager.get(guildId);
-  if (!player.paused) return "The player is already resumed";
+  if (!player.paused) return "> The player is already resumed";
   player.pause(false);
-  return "▶️ Resumed the music player";
+  return "> ▶️ Resumed the music player";
 }

@@ -1,4 +1,4 @@
-const { Util, MessageEmbed, Message, CommandInteraction } = require("discord.js");
+const { parseEmoji, EmbedBuilder, ApplicationCommandOptionType, Message, CommandInteraction } = require("discord.js");
 const { Command } = require("@src/structures");
 const { EMBED_COLORS } = require("@root/config.js");
 const { parse } = require("twemoji-parser");
@@ -9,7 +9,7 @@ module.exports = class BigEmoji extends Command {
       name: "bigemoji",
       description: "enlarge an emoji",
       category: "UTILITY",
-      botPermissions: ["EMBED_LINKS"],
+      botPermissions: ["EmbedLinks"],
       command: {
         enabled: true,
         usage: "<emoji>",
@@ -22,7 +22,7 @@ module.exports = class BigEmoji extends Command {
           {
             name: "emoji",
             description: "emoji to enlarge",
-            type: "STRING",
+            type: ApplicationCommandOptionType.String,
             required: true,
           },
         ],
@@ -51,17 +51,18 @@ module.exports = class BigEmoji extends Command {
 };
 
 function getEmoji(user, emoji) {
-  const custom = Util.parseEmoji(emoji);
+  const custom = parseEmoji(emoji);
 
   const embed = new EmbedBuilder()
     .setAuthor({ name: "❯ Big Emoji ❮" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setFooter({ text: `Requested by ${user.tag}` });
 
-  if (custom.id) {
+  if (custom?.id) {
     embed.setImage(`https://cdn.discordapp.com/emojis/${custom.id}.${custom.animated ? "gif" : "png"}`);
     return { embeds: [embed] };
   }
+
   const parsed = parse(emoji, { assetType: "png" });
   if (!parsed[0]) return "Not a valid emoji";
 

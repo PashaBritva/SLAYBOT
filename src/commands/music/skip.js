@@ -18,27 +18,25 @@ module.exports = class Skip extends Command {
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
-    const response = skip(message);
+  async messageRun(message) {
+    const response = await skip(message);
     await message.reply(response);
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
-    const response = skip(interaction);
+    const response = await skip(interaction);
     await interaction.followUp(response);
   }
 };
 
-function skip({ client, guildId }) {
+async function skip({ client, guildId }) {
   const player = client.musicManager.get(guildId);
+
+  if (!player) return "> ❌ There is no active music player.";
+  if (!player.queue || !player.queue.current) return "> ❌ There is no song to skip.";
+
   const { title } = player.queue.current;
   player.stop();
-  return `⏯️ ${title} was skipped.`;
+
+  return `> ⏭️ Skipped: **${title}**`;
 }

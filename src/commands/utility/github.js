@@ -1,5 +1,5 @@
 const { Command } = require("@src/structures");
-const { MessageEmbed, Message, CommandInteraction } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType, Message, CommandInteraction } = require("discord.js");
 const { MESSAGES } = require("@root/config.js");
 const { getJson } = require("@utils/httpUtils");
 const outdent = require("outdent");
@@ -11,7 +11,7 @@ module.exports = class GithubCommand extends Command {
       description: "shows github statistics of a user",
       cooldown: 10,
       category: "UTILITY",
-      botPermissions: ["EMBED_LINKS"],
+      botPermissions: ["EmbedLinks"],
       command: {
         enabled: true,
         aliases: ["git"],
@@ -24,7 +24,7 @@ module.exports = class GithubCommand extends Command {
           {
             name: "username",
             description: "github username",
-            type: "STRING",
+            type: ApplicationCommandOptionType.String,
             required: true,
           },
         ],
@@ -52,7 +52,10 @@ module.exports = class GithubCommand extends Command {
   }
 };
 
-const websiteProvided = (text) => (text.startsWith("http://") ? true : text.startsWith("https://"));
+function websiteProvided(text) {
+  if (!text) return false;
+  return text.startsWith("http://") || text.startsWith("https://");
+}
 
 async function getGithubUser(target, author) {
   const response = await getJson(`https://api.github.com/users/${target}`);
@@ -74,7 +77,6 @@ async function getGithubUser(target, author) {
   } = json;
 
   let website = websiteProvided(blog) ? `[Click me](${blog})` : "Not Provided";
-  if (website == null) website = "Not Provided";
 
   const embed = new EmbedBuilder()
     .setAuthor({
@@ -82,15 +84,23 @@ async function getGithubUser(target, author) {
       url: userPageLink,
       iconURL: avatarUrl,
     })
-    .addField(
-      "User Info",
-      outdent`**Real Name**: *${name || "Not Provided"}*
-        **Location**: *${location}*
-        **GitHub ID**: *${githubId}*
-        **Website**: *${website}*\n`,
-      true
-    )
-    .addField("Social Stats", `**Followers**: *${followers}*\n**Following**: *${following}*`, true)
+    .addFields([
+      {
+        name: "User Info",
+        value: outdent`
+          **Real Name**: *${name || "Not Provided"}*
+          **Location**: *${location || "Not Provided"}*
+          **GitHub ID**: *${githubId}*
+          **Website**: *${website}*
+        `,
+        inline: true,
+      },
+      {
+        name: "Social Stats",
+        value: `**Followers**: *${followers}*\n**Following**: *${following}*`,
+        inline: true,
+      },
+    ])
     .setDescription(`**Bio**:\n${bio || "Not Provided"}`)
     .setImage(avatarUrl)
     .setColor(0x6e5494)

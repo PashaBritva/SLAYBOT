@@ -1,68 +1,51 @@
 const { EMBED_COLORS } = require("@root/config");
 const { Command } = require("@src/structures");
-const { Message, MessageEmbed, CommandInteraction } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const prettyMs = require("pretty-ms");
 const { splitBar } = require("string-progressbar");
 
-module.exports = class Skip extends Command {
+module.exports = class NowPlaying extends Command {
   constructor(client) {
     super(client, {
       name: "np",
-      description: "show's what track is currently being played",
+      description: "shows the track currently being played",
       category: "MUSIC",
       botPermissions: ["EMBED_LINKS"],
-      command: {
-        enabled: true,
-        aliases: ["nowplaying"],
-      },
-      slashCommand: {
-        enabled: true,
-      },
+      command: { enabled: true, aliases: ["nowplaying"] },
+      slashCommand: { enabled: true },
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
-    const response = nowPlaying(message);
-    await message.reply(response);
+  async messageRun(message) {
+    await message.reply(getNowPlaying(message));
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
-    const response = nowPlaying(interaction);
-    await interaction.followUp(response);
+    await interaction.followUp(getNowPlaying(interaction));
   }
 };
 
-function nowPlaying({ client, guildId }) {
+function getNowPlaying({ client, guildId }) {
   const player = client.musicManager.get(guildId);
-  if (!player || !player.queue.current) return "🚫 No music is being played!";
+  if (!player || !player.queue.current) return "> 🚫 No music is being played!";
 
   const track = player.queue.current;
-  const end = track.duration > 6.048e8 ? "🔴 LIVE" : new Date(track.duration).toISOString().slice(11, 19);
+  const duration = track.duration > 6.048e8 ? "🔴 LIVE" : prettyMs(track.duration, { colonNotation: true });
+  const position = prettyMs(player.position, { colonNotation: true });
 
   const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
-    .setAuthor("Now Playing ♪", client.user.displayAvatarURL())
-    .addField(`Playing`,`[${track.title}](${track.uri})`)
-    .addField(
-      "Position",
-      new Date(player.position).toISOString().slice(11, 19) +
-        " [" +
-        splitBar(track.duration > 6.048e8 ? player.position : track.duration, player.position, 15)[0] +
-        "] " +
-        end,
-      false
-    )
-    .addField("Position in Queue", (player.queue.size - 0).toString(), true)
-    .addField("\u200b","\u200b")
-    .addField("Song Duration", "`" + prettyMs(track.duration, { colonNotation: true }) + "`", true)
-    .addField("Added By", track.requester.tag || "NA", true);
+    .setAuthor({ name: "Now Playing ♪", iconURL: client.user.displayAvatarURL() })
+    .addFields(
+      { name: "🎵 Track", value: `[${track.title}](${track.uri})` },
+      {
+        name: "⏱️ Position",
+        value: `${position} [${splitBar(track.duration > 6.048e8 ? player.position : track.duration, player.position, 15)[0]}] ${duration}`,
+      },
+      { name: "📄 Position in Queue", value: (player.queue.size - 0).toString(), inline: true },
+      { name: "⏳ Song Duration", value: `\`${duration}\``, inline: true },
+      { name: "🙋 Added By", value: track.requester?.tag || "NA", inline: true }
+    );
 
   if (typeof track.displayThumbnail === "function") embed.setThumbnail(track.displayThumbnail("hqdefault"));
 

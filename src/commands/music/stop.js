@@ -20,10 +20,9 @@ module.exports = class Stop extends Command {
 
   /**
    * @param {Message} message
-   * @param {string[]} args
    */
-  async messageRun(message, args) {
-    const response = stop(message);
+  async messageRun(message) {
+    const response = await stop(message);
     await message.reply(response);
   }
 
@@ -31,13 +30,18 @@ module.exports = class Stop extends Command {
    * @param {CommandInteraction} interaction
    */
   async interactionRun(interaction) {
-    const response = stop(interaction);
+    const response = await stop(interaction);
     await interaction.followUp(response);
   }
 };
 
-function stop({ client, guildId }) {
+async function stop({ client, guildId }) {
   const player = client.musicManager.get(guildId);
+
+  if (!player) {
+    return "> ❌ There is no active music player for this server.";
+  }
+
   player.destroy();
-  return "🎶 The music player is stopped and queue has been cleared";
+  return "> 🛑 The music player has been stopped and the queue has been cleared.";
 }

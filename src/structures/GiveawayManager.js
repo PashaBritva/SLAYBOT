@@ -1,8 +1,9 @@
 const { GiveawaysManager } = require("discord-giveaways");
 const Model = require("@schemas/Giveaways");
 const { EMBED_COLORS } = require("@root/config");
+const { success, warn, error, log } = require("@src/helpers/logger");
 
-module.exports = class extends GiveawaysManager {
+module.exports = class GiveawayManager extends GiveawaysManager {
   constructor(client) {
     super(client, {
       default: {
@@ -19,17 +20,42 @@ module.exports = class extends GiveawaysManager {
   }
 
   async saveGiveaway(messageId, giveawayData) {
-    await Model.create(giveawayData);
-    return true;
+    try {
+      await Model.create(giveawayData);
+      success(`[GIVEAWAYS] Saved giveaway ${messageId}`);
+      return true;
+    } catch (e) {
+      error(`[GIVEAWAYS] Failed to save giveaway ${messageId}:`, e);
+      return false;
+    }
   }
 
   async editGiveaway(messageId, giveawayData) {
-    await Model.updateOne({ messageId }, giveawayData, { omitUndefined: true }).exec();
-    return true;
+    try {
+      await Model.findOneAndUpdate(
+        { messageId },
+        giveawayData,
+        { new: true, omitUndefined: true }
+      );
+      log(`[GIVEAWAYS] Edited giveaway ${messageId}`);
+      return true;
+    } catch (e) {
+      error(`[GIVEAWAYS] Failed to edit giveaway ${messageId}:`, e);
+      return false;
+    }
   }
 
   async deleteGiveaway(messageId) {
-    await Model.deleteOne({ messageId }).exec();
-    return true;
+    try {
+      const res = await Model.deleteOne({ messageId }).exec();
+      if (res.deletedCount > 0) {
+        log(`[GIVEAWAYS] Deleted giveaway ${messageId}`);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      error(`[GIVEAWAYS] Failed to delete giveaway ${messageId}:`, e);
+      return false;
+    }
   }
 };

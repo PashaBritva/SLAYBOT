@@ -9,35 +9,28 @@ module.exports = class Shuffle extends Command {
       description: "shuffle the queue",
       category: "MUSIC",
       validations: musicValidations,
-      command: {
-        enabled: true,
-      },
-      slashCommand: {
-        enabled: true,
-      },
+      command: { enabled: true },
+      slashCommand: { enabled: true },
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
-    const response = shuffle(message);
+  async messageRun(message) {
+    const response = await shuffle(message);
     await message.reply(response);
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
-    const response = shuffle(interaction);
+    const response = await shuffle(interaction);
     await interaction.followUp(response);
   }
 };
 
-function shuffle({ client, guildId }) {
+async function shuffle({ client, guildId }) {
   const player = client.musicManager.get(guildId);
+
+  if (!player) return "> ❌ There is no active music player.";
+  if (!player.queue || !player.queue.length) return "> ❌ There are no songs in the queue to shuffle.";
+
   player.queue.shuffle();
-  return "🎶 Queue has been shuffled";
+  return "> 🎶 Queue has been shuffled!";
 }

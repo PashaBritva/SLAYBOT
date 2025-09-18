@@ -3,22 +3,21 @@ const { reactionHandler } = require("@src/handlers");
 /**
  * @param {import('@src/structures').BotClient} client
  * @param {import('discord.js').MessageReaction|import('discord.js').PartialMessageReaction} reaction
- * @param {import('discord.js').User} user
+ * @param {import('discord.js').User|import('discord.js').PartialUser} user
  */
 module.exports = async (client, reaction, user) => {
   if (reaction.partial) {
-    try {
-      await reaction.fetch();
-    } catch (ex) {
-      return; // Possibly deleted
-    }
+    try { await reaction.fetch(); } catch { return; }
   }
+  if (user.partial) await user.fetch();
+  if (user.bot) return;
+
   const { message } = reaction;
 
-  const reactionRole = reactionHandler.getRole(reaction);
-  if (reactionRole) {
-    const member = await message.guild.members.members.fetch(user.id);
+  const role = reactionHandler.getRole(reaction);
+  if (role) {
+    const member = await message.guild.members.fetch(user.id).catch(() => null);
     if (!member) return;
-    await member.roles.remove(reactionRole);
+    await member.roles.remove(role).catch(() => {});
   }
 };

@@ -1,15 +1,13 @@
 {
   "name": "slaybot",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "A multipurpose Discord bot built using modern Node.js and discord.js",
   "main": "bot.js",
   "author": "isaac",
-  "license": "ISC",
+  "license": "Custom",
   "scripts": {
     "dev": "nodemon .",
-    "start": "node bot.js",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "start": "node bot.js"
   },
   "homepage": "https://github.com/PashaBritva/SLAYBOT#readme",
   "repository": {
@@ -17,7 +15,7 @@
     "url": "git+https://github.com/PashaBritva/SLAYBOT.git"
   },
   "engines": {
-    "node": ">=22.0.0 <23.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@vitalets/google-translate-api": "9.2.1",
@@ -30,8 +28,6 @@
     "dotenv": "16.4.5",
     "ejs": "3.1.10",
     "erela.js": "2.3.3",
-    "erela.js-deezer": "1.0.7",
-    "erela.js-spotify": "1.2.0",
     "express": "4.21.2",
     "express-session": "1.18.2",
     "fixedsize-map": "1.0.1",
@@ -63,10 +59,9 @@
   ],
   "_moduleAliases": {
     "@root": ".",
-    "@commands": "src/commands/",
-    "@features": "src/features/",
-    "@schemas": "src/schemas/",
     "@src": "src/",
+    "@commands": "src/commands/",
+    "@schemas": "src/schemas/",
     "@utils": "src/utils/"
   },
   "bugs": {

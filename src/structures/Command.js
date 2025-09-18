@@ -105,6 +105,15 @@ class Command {
     }
   }
 
+  sendWsUpdate(event, payload) {
+    if (!this.client.wsPanel) return;
+    try {
+        this.client.wsPanel.emit("commandEvent", { command: this.name, event, payload });
+    } catch (err) {
+        this.client.logger.error("sendWsUpdate", err);
+    }
+  }  
+
   /**
    * Function that validates the message with the command options
    * @param {import('discord.js').Message} message
@@ -158,6 +167,7 @@ class Command {
 
     try {
       await this.messageRun(message, args, invoke, prefix);
+      this.sendWsUpdate("messageRun", { userId: message.author.id, channelId: message.channel.id });
     } catch (ex) {
       await message.channel.send("Oops! An error occurred while running the command");
       this.client.logger.error("messageRun", ex);
@@ -229,6 +239,7 @@ class Command {
       }
 
       await this.interactionRun(interaction);
+      this.sendWsUpdate("interactionRun", { userId: interaction.user.id, channelId: interaction.channelId });
     } catch (ex) {
       this.client.logger.error("interactionRun", ex);
 

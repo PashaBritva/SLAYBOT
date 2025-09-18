@@ -25,14 +25,14 @@ module.exports = async (client, member) => {
     }
   }
 
-  if (settings.counters && settings.counters.length > 0) {
-    const hasCounter = settings.counters.find((doc) => 
-      doc.counter_type && ["MEMBERS", "BOTS", "USERS"].includes(doc.counter_type.toUpperCase())
+  if (settings.counters?.length > 0) {
+    const hasCounter = settings.counters.some((doc) => 
+      ["MEMBERS", "BOTS", "USERS"].includes(doc.counter_type?.toUpperCase())
     );
-    
+
     if (hasCounter) {
       if (member.user.bot) {
-        settings.data.bots += 1;
+        settings.data.bots = (settings.data.bots || 0) + 1;
         await settings.save();
       }
       if (!client.counterUpdateQueue.includes(guild.id)) {
@@ -41,7 +41,9 @@ module.exports = async (client, member) => {
     }
   }
 
-  const inviterData = settings.invite?.tracking ? await inviteHandler.trackJoinedMember(member) : {};
+  const inviterData = settings.invite?.tracking
+    ? await inviteHandler.trackJoinedMember(member)
+    : {};
 
   greetingHandler.sendWelcome(member, inviterData);
 };

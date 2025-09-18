@@ -1,4 +1,4 @@
-const { Guild, TextChannel, VoiceChannel, Message, Role } = require("discord.js");
+const { Guild, TextChannel, VoiceChannel, Message, Role, PermissionsBitField } = require("discord.js");
 
 const ROLE_MENTION = /<?@?&?(\d{17,20})>?/;
 const MEMBER_MENTION = /<?@?!?(\d{17,20})>?/;
@@ -8,29 +8,36 @@ const CHANNEL_MENTION = /<?#?(\d{17,20})>?/;
  * @param {Guild} guild
  * @param {string} name
  */
-// eslint-disable-next-line no-unused-vars
 function getRoleByName(guild, name) {
-  return guild.roles.cache.find((role) => role.name.toLowerCase() === name);
+  return guild.roles.cache.find((role) => role.name.toLowerCase() === name.toLowerCase());
 }
 
 /**
  * @param {TextChannel} channel
  */
 function canSendEmbeds(channel) {
-  return channel.permissionsFor(channel.guild.me).has(["SEND_MESSAGES", "EMBED_LINKS"]);
+  if (!channel || !(channel instanceof TextChannel)) return false;
+  const me = channel.guild.members.me;
+  if (!me) return false;
+
+  return channel.permissionsFor(me).has([
+    PermissionsBitField.Flags.ViewChannel,
+    PermissionsBitField.Flags.SendMessages,
+    PermissionsBitField.Flags.EmbedLinks,
+  ]);
 }
 
 /**
  * @param {Guild} guild
- * @param {string} name
+ * @param {string} query
  */
 function getMatchingChannel(guild, query) {
-  if (!guild || !query || typeof query !== "string") return;
+  if (!guild || !query || typeof query !== "string") return [];
 
   const patternMatch = query.match(CHANNEL_MENTION);
   if (patternMatch) {
     const id = patternMatch[1];
-    const channel = guild.channels.cache.find((r) => r.id === id);
+    const channel = guild.channels.cache.get(id);
     if (channel) return [channel];
   }
 
@@ -55,17 +62,16 @@ function getMatchingChannel(guild, query) {
  * @param {string} name
  */
 async function setVoiceChannelName(vc, name) {
-  if (vc.manageable) vc.setName(name).catch((err) => vc.client.logger.log("Set Name error: ", err));
+  if (vc.manageable) {
+    vc.setName(name).catch((err) => vc.client.logger?.log("Set Name error:", err));
+  }
 }
 
 /**
  * @param {Guild} guild
  */
 async function getMemberStats(guild) {
-  const all = await guild.members.fetch({
-    force: false,
-    cache: false,
-  });
+  const all = await guild.members.fetch({ force: false, cache: false });
   const total = all.size;
   const bots = all.filter((mem) => mem.user.bot).size;
   const members = total - bots;
@@ -83,7 +89,7 @@ function findMatchingRoles(guild, query) {
   const patternMatch = query.match(ROLE_MENTION);
   if (patternMatch) {
     const id = patternMatch[1];
-    const role = guild.roles.cache.find((r) => r.id === id);
+    const role = guild.roles.cache.get(id);
     if (role) return [role];
   }
 
@@ -104,25 +110,25 @@ function findMatchingRoles(guild, query) {
 
 /**
  * @param {Message} message
- * @param {string} search
+ * @param {string} query
  * @param {Boolean} exact
  */
 async function resolveMember(message, query, exact = false) {
   if (!message || !query || typeof query !== "string") return;
-  const memberManager = message.guild.members.members;
+  const memberManager = message.guild.members;
 
   const patternMatch = query.match(MEMBER_MENTION);
   if (patternMatch) {
     const id = patternMatch[1];
 
-    const mentioned = message.mentions.members.find((m) => m.id === id);
+    const mentioned = message.mentions.members.get(id);
     if (mentioned) return mentioned;
 
-    const fetched = await memberManager.fetch({ user: id }).catch(() => {});
+    const fetched = await memberManager.fetch({ user: id }).catch(() => null);
     if (fetched) return fetched;
   }
 
-  await memberManager.fetch({ query }).catch(() => {});
+  await memberManager.fetch({ query }).catch(() => null);
 
   const matchingTags = memberManager.cache.filter((mem) => mem.user.tag === query);
   if (matchingTags.size === 1) return matchingTags.first();
@@ -137,27 +143,6 @@ async function resolveMember(message, query, exact = false) {
   }
 }
 
-/**
- * @param {Message} message
- */
-// eslint-disable-next-line no-unused-vars
-async function resolveMembers(message) {
-  const regex = /<?@?!?(\d{17,20})>?/g;
-  const targetMembers = [];
-  let lastMatch, result;
-  while ((result = regex.exec(message.content))) {
-    lastMatch = result[0];
-    let target = await message.guild.members.members.fetch(result[1]);
-    if (target) targetMembers.push(target);
-  }
-
-  const remaining = message.content.split(lastMatch)[1].trim();
-  return {
-    members: targetMembers,
-    remainingArgs: remaining.split(/\\s/),
-  };
-}
-
 module.exports = {
   canSendEmbeds,
   getMatchingChannel,
@@ -165,4 +150,5 @@ module.exports = {
   getMemberStats,
   findMatchingRoles,
   resolveMember,
+  getRoleByName,
 };

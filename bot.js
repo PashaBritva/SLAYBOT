@@ -6,6 +6,7 @@ const { startupCheck } = require("@utils/botUtils");
 const { BotClient } = require("@src/structures");
 const BlockedServer = require("@schemas/BlockedServer");
 const tempRolesHandler = require("@utils/tempRolesUtils");
+const { error } = require("@src/helpers/logger");
 
 global.__appRoot = path.resolve(__dirname);
 
@@ -17,7 +18,7 @@ client.loadContexts("src/contexts");
 client.loadEvents("src/events");
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason?.stack || reason);
+  error("Unhandled Rejection at:", promise, "reason:", reason?.stack || reason);
   client.logger?.error?.(
     `Unhandled exception: ${reason?.message || reason}`,
     reason?.stack || reason
@@ -25,7 +26,7 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err?.stack || err);
+  error("Uncaught Exception:", err?.stack || err);
   client.logger?.error?.(`Uncaught exception: ${err?.message}`, err?.stack || err);
 });
 

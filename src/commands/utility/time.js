@@ -1,35 +1,49 @@
 module.exports = {
+  /**
+   * @param {string} durationStr
+   * @returns {number}
+   */
   parseDuration(durationStr) {
     const regex = /(\d+)([dhm])/g;
     let matches;
-    let totalMilliseconds = 0;
-    
+    let totalMs = 0;
+
     while ((matches = regex.exec(durationStr)) !== null) {
-      const value = parseInt(matches[1]);
+      const value = parseInt(matches[1], 10);
       const unit = matches[2];
-      
-      switch(unit) {
-        case 'd': totalMilliseconds += value * 24 * 60 * 60 * 1000; break;
-        case 'h': totalMilliseconds += value * 60 * 60 * 1000; break;
-        case 'm': totalMilliseconds += value * 60 * 1000; break;
+
+      switch (unit) {
+        case "d":
+          totalMs += value * 24 * 60 * 60 * 1000;
+          break;
+        case "h":
+          totalMs += value * 60 * 60 * 1000;
+          break;
+        case "m":
+          totalMs += value * 60 * 1000;
+          break;
       }
     }
-    
-    return totalMilliseconds;
+
+    return totalMs;
   },
-  
+
+  /**
+   * @param {number} ms
+   * @returns {string}
+   */
   formatDuration(ms) {
-    if (ms === 0) return "Навсегда";
-    
-    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
-    const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-    const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
-    
+    if (ms === 0) return "Forever";
+
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+
     const parts = [];
-    if (days > 0) parts.push(`${days}д`);
-    if (hours > 0) parts.push(`${hours}ч`);
-    if (minutes > 0) parts.push(`${minutes}м`);
-    
-    return parts.join(" ");
-  }
+    if (days) parts.push(`${days}д`);
+    if (hours) parts.push(`${hours}ч`);
+    if (minutes) parts.push(`${minutes}м`);
+
+    return parts.join(" ") || "0м";
+  },
 };

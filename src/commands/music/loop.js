@@ -1,12 +1,11 @@
 const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
 const { musicValidations } = require("@utils/botUtils");
 
 module.exports = class Loop extends Command {
   constructor(client) {
     super(client, {
       name: "loop",
-      description: "loops the song or queue",
+      description: "loops the current song or the entire queue",
       category: "MUSIC",
       validations: musicValidations,
       command: {
@@ -20,17 +19,11 @@ module.exports = class Loop extends Command {
           {
             name: "type",
             type: "STRING",
-            description: "The entity you want to loop",
+            description: "Select what you want to loop",
             required: false,
             choices: [
-              {
-                name: "queue",
-                value: "queue",
-              },
-              {
-                name: "track",
-                value: "track",
-              },
+              { name: "Track", value: "track" },
+              { name: "Queue", value: "queue" },
             ],
           },
         ],
@@ -38,20 +31,12 @@ module.exports = class Loop extends Command {
     });
   }
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
   async messageRun(message, args) {
-    const input = args[0].toLowerCase();
-    const type = input === "queue" ? "queue" : "track";
+    const type = args[0]?.toLowerCase() === "queue" ? "queue" : "track";
     const response = toggleLoop(message, type);
     await message.reply(response);
   }
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
     const type = interaction.options.getString("type") || "track";
     const response = toggleLoop(interaction, type);
@@ -61,16 +46,15 @@ module.exports = class Loop extends Command {
 
 function toggleLoop({ client, guildId }, type) {
   const player = client.musicManager.get(guildId);
+  if (!player) return "> 🚫 No music is currently playing!";
 
-  // track
   if (type === "track") {
     player.setTrackRepeat(!player.trackRepeat);
-    return `Track loop ${player.trackRepeat ? "enabled" : "disabled"}`;
+    return `> 🔁 Track loop is now **${player.trackRepeat ? "enabled" : "disabled"}**`;
+  } else if (type === "queue") {
+    player.setQueueRepeat(!player.queueRepeat);
+    return `> 🔂 Queue loop is now **${player.queueRepeat ? "enabled" : "disabled"}**`;
   }
 
-  // queue
-  else if (type === "queue") {
-    player.setQueueRepeat(!player.queueRepeat);
-    return `Queue loop ${player.queueRepeat ? "enabled" : "disabled"}`;
-  }
+  return "> ❌ Invalid loop type. Use `track` or `queue`.";
 }

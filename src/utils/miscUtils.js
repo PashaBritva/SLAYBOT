@@ -1,8 +1,7 @@
 const { countryCodeExists } = require("country-language");
 const data = require("@src/data.json");
 
-const LINK_PATTERN =
-  /https?:\/\/(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/gi;
+const LINK_PATTERN = /\b((https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^\s]*)?\b/gi;
 
 const DISCORD_INVITE_PATTERN =
   /(?:https?:\/\/)?(?:www\.)?(discord\.(?:gg|io|me|li|link|plus)|discord(?:app)?\.com\/invite|invite\.gg|dsc\.gg|urlcord\.cf)\/([a-zA-Z0-9-]+)/gi;
@@ -12,6 +11,7 @@ const DISCORD_INVITE_PATTERN =
  * @param {string} text
  */
 function containsLink(text) {
+  LINK_PATTERN.lastIndex = 0;
   return LINK_PATTERN.test(text);
 }
 
@@ -20,6 +20,7 @@ function containsLink(text) {
  * @param {string} text
  */
 function containsDiscordInvite(text) {
+  DISCORD_INVITE_PATTERN.lastIndex = 0;
   return DISCORD_INVITE_PATTERN.test(text);
 }
 
@@ -59,23 +60,28 @@ function timeformat(timeInSeconds) {
   const hours = Math.floor((timeInSeconds % 86400) / 3600);
   const minutes = Math.floor((timeInSeconds % 3600) / 60);
   const seconds = Math.round(timeInSeconds % 60);
-  return (
-    (days > 0 ? `${days} days, ` : "") +
-    (hours > 0 ? `${hours} hours, ` : "") +
-    (minutes > 0 ? `${minutes} minutes, ` : "") +
-    (seconds > 0 ? `${seconds} seconds` : "")
-  );
+
+  return [
+    days > 0 && `${days} days`,
+    hours > 0 && `${hours} hours`,
+    minutes > 0 && `${minutes} minutes`,
+    seconds > 0 && `${seconds} seconds`
+  ].filter(Boolean).join(", ");
 }
+
 
 /**
  * Converts duration to milliseconds
  * @param {string} duration
  */
-const durationToMillis = (duration) =>
-  duration
-    .split(":")
-    .map(Number)
-    .reduce((acc, curr) => curr + acc * 60) * 1000;
+function durationToMillis(duration) {
+  const parts = duration.split(":").map(Number).reverse();
+  let millis = 0;
+  if (parts[0]) millis += parts[0] * 1000;
+  if (parts[1]) millis += parts[1] * 60 * 1000;
+  if (parts[2]) millis += parts[2] * 3600 * 1000;
+  return millis;
+}
 
 /**
  * Returns time remaining until provided date
@@ -92,10 +98,9 @@ function getRemainingTime(timeUntil) {
  * @param {string} emoji
  */
 function getCountryFromFlag(emoji) {
-  if (emoji.length === 4) {
-    const l1 = emoji[0] + emoji[1];
-    const l2 = emoji[2] + emoji[3];
-    const countryCode = data.UNICODE_LETTER[l1] + data.UNICODE_LETTER[l2];
+  const chars = Array.from(emoji);
+  if (chars.length === 2) {
+    const countryCode = data.UNICODE_LETTER[chars[0]] + data.UNICODE_LETTER[chars[1]];
     if (countryCodeExists(countryCode)) return countryCode;
   }
   return null;

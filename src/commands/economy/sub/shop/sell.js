@@ -3,6 +3,7 @@ const { EmbedBuilder } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const { ECONOMY } = require("@root/config");
 const TemporaryRole = require("@schemas/TemporaryRoles");
+const { error } = require("@src/helpers/logger");
 
 module.exports = async function sell(guildId, user, name) {
   const shop = await ServerShop.findOne({ guildId });
@@ -33,8 +34,8 @@ module.exports = async function sell(guildId, user, name) {
 
       await TemporaryRole.deleteMany({ userId: user.id, guildId, roleId: inventoryItem.roleId });
 
-    } catch (error) {
-      console.error("Error removing role:", error);
+    } catch (err) {
+      error("Error removing role:", err);
       if (error.code === 50013) {
         roleInfo = " (Bot lacks permissions to remove roles)";
       } else {

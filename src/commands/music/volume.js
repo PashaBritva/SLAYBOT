@@ -1,5 +1,5 @@
 const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
+const { Message, CommandInteraction, ApplicationCommandOptionType } = require("discord.js");
 const { musicValidations } = require("@utils/botUtils");
 
 module.exports = class Volume extends Command {
@@ -18,8 +18,8 @@ module.exports = class Volume extends Command {
         options: [
           {
             name: "amount",
-            description: "Enter a value to set [0 to 100]",
-            type: "INTEGER",
+            description: "Enter a value to set [1 to 100]",
+            type: ApplicationCommandOptionType.Integer,
             required: false,
           },
         ],
@@ -32,8 +32,8 @@ module.exports = class Volume extends Command {
    * @param {string[]} args
    */
   async messageRun(message, args) {
-    const amount = args[0];
-    const response = volume(message, amount);
+    const amount = parseInt(args[0], 10);
+    const response = await setVolume(message, amount);
     await message.reply(response);
   }
 
@@ -42,17 +42,22 @@ module.exports = class Volume extends Command {
    */
   async interactionRun(interaction) {
     const amount = interaction.options.getInteger("amount");
-    const response = volume(interaction, amount);
+    const response = await setVolume(interaction, amount);
     await interaction.followUp(response);
   }
 };
 
-function volume({ client, guildId }, volume) {
+async function setVolume({ client, guildId }, amount) {
   const player = client.musicManager.get(guildId);
 
-  if (!volume) return `> The player volume is \`${player.volume}\`.`;
-  if (volume < 1 || volume > 100) return "you need to give me a volume between 1 and 100.";
+  if (!player) return "> ❌ No active music player for this server.";
 
-  player.setVolume(volume);
-  return `🎶 Music player volume is set to \`${volume}\`.`;
+  if (!amount) return `> 🔊 The player volume is currently \`${player.volume}\`.`;
+
+  if (amount < 1 || amount > 100) {
+    return "> ❌ You need to give me a volume between **1** and **100**.";
+  }
+
+  player.setVolume(amount);
+  return `> 🎶 Music player volume has been set to \`${amount}\`.`;
 }

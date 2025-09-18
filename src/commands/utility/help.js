@@ -1,11 +1,11 @@
 const { Command, CommandCategory, BotClient } = require("@src/structures");
 const { EMBED_COLORS, SUPPORT_SERVER } = require("@root/config.js");
 const {
-  MessageEmbed,
-  MessageActionRow,
-  MessageSelectMenu,
-  Message,
-  MessageButton,
+  EmbedBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   CommandInteraction,
 } = require("discord.js");
 
@@ -57,11 +57,9 @@ module.exports = class HelpCommand extends Command {
       return waiter(sentMsg, message.author.id, prefix);
     }
 
-    // check if command help (!help cat)
     const cmd = this.client.getCommand(trigger);
     if (cmd) return cmd.sendUsage(message.channel, prefix, trigger);
 
-    // No matching command/category found
     await message.reply("No matching command found");
   }
 
@@ -81,14 +79,12 @@ module.exports = class HelpCommand extends Command {
       return waiter(sentMsg, interaction.user.id);
     }
 
-    // check if command help (!help cat)
     const cmd = this.client.slashCommands.get(cmdName);
     if (cmd) {
       const embed = cmd.getSlashUsage();
       return interaction.followUp({ embeds: [embed] });
     }
 
-    // No matching command/category found
     await interaction.followUp("No matching command found");
   }
 };
@@ -97,7 +93,6 @@ module.exports = class HelpCommand extends Command {
  * @param {CommandInteraction} interaction
  */
 async function getHelpMenu({ client, guild }) {
-  // Menu Row
   const options = [];
   const keys = Object.keys(CommandCategory);
   keys.forEach((key) => {
@@ -111,33 +106,55 @@ async function getHelpMenu({ client, guild }) {
     options.push(data);
   });
 
-  const menuRow = new MessageActionRow().addComponents(
-    new MessageSelectMenu().setCustomId("help-menu").setPlaceholder("Choose the command category").addOptions(options)
-  );
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId("help-menu")
+    .setPlaceholder("Choose a category")
+    .addOptions(options);
+
+  const menuRow = new ActionRowBuilder().addComponents(selectMenu);
 
   // Buttons Row
   let components = [];
   components.push(
-    new MessageButton().setCustomId("previousBtn").setEmoji("⬅️").setStyle("SECONDARY").setDisabled(true),
-    new MessageButton().setCustomId("nextBtn").setEmoji("➡️").setStyle("SECONDARY").setDisabled(true)
+    new ButtonBuilder()
+      .setCustomId("previousBtn")
+      .setEmoji("⬅️")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId("nextBtn")
+      .setEmoji("➡️")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true)
   );
-components.push(new MessageButton().setLabel("Invite Link").setURL(client.getInvite()).setStyle("LINK"));
+  
+  components.push(
+    new ButtonBuilder()
+      .setLabel("Invite Link")
+      .setURL(client.getInvite())
+      .setStyle(ButtonStyle.Link)
+  );
 
   if (SUPPORT_SERVER) {
-    components.push(new MessageButton().setLabel("Support Server").setURL(SUPPORT_SERVER).setStyle("LINK"));
+    components.push(
+      new ButtonBuilder()
+        .setLabel("Support Server")
+        .setURL(SUPPORT_SERVER)
+        .setStyle(ButtonStyle.Link)
+    );
   }
- 
-  let buttonsRow = new MessageActionRow().addComponents(components);
+
+  let buttonsRow = new ActionRowBuilder().addComponents(components);
 
   const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.BOT_EMBED)
-//  .setImage("https://cdn.discordapp.com/attachments/965654226187460629/980773092307664926/09611780-c857-11eb-859d-0761b6537103.jpeg")  .setThumbnail(client.user.displayAvatarURL())
+    .setThumbnail(client.user.displayAvatarURL())
     .setDescription(
       "**About Me:**\n" +
         `Hello I am ${guild.me.displayName}!\n` +
         "A cool multipurpose discord bot which can serve all your needs\n\n" +
         `**Invite Me:** [Here](${client.getInvite()})\n` +
-        `**Support Server:** [Join](${SUPPORT_SERVER})`
+        `**Support Server:** [Join](${SUPPORT_SERVER || "Not configured"})`
     );
 
   return {

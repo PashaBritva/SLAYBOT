@@ -3,25 +3,22 @@ const { getSettings } = require("@schemas/Guild");
 const { sendMessage } = require("@utils/botUtils");
 
 /**
- * Parses user mentions in the text
+ * Parses mentions (<@ID>, <@&ID>, <#ID>) in the text
  * @param {string} text 
  * @param {import('discord.js').Guild} guild 
  * @returns {Promise<string>}
  */
 async function parseMentions(text, guild) {
-  // Processing user mentions (<@ID>)
   text = text.replace(/<@!?(\d+)>/g, (match, id) => {
     const user = guild.client.users.cache.get(id);
     return user ? `<@${user.id}>` : match;
   });
 
-  // Handling role mentions (<@&ID>)
   text = text.replace(/<@&(\d+)>/g, (match, id) => {
     const role = guild.roles.cache.get(id);
     return role ? role.toString() : match;
   });
 
-  // Processing channel mentions (<#ID>)
   text = text.replace(/<#(\d+)>/g, (match, id) => {
     const channel = guild.channels.cache.get(id);
     return channel ? channel.toString() : match;
@@ -31,16 +28,15 @@ async function parseMentions(text, guild) {
 }
 
 /**
- * Parses the message content with variable substitution
+ * Parses content with variables for welcome/farewell messages
  * @param {string} content
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
-const parse = async (content, member, inviterData = {}) => {
+async function parseContent(content, member, inviterData = {}) {
   const inviteData = {};
-
   const getEffectiveInvites = (inviteData = {}) =>
-    inviteData.tracked + inviteData.added - inviteData.fake - inviteData.left || 0;
+    (inviteData.tracked + inviteData.added - inviteData.fake - inviteData.left) || 0;
 
   if (content.includes("{inviter:")) {
     const inviterId = inviterData.member_id || "NA";
@@ -49,8 +45,7 @@ const parse = async (content, member, inviterData = {}) => {
         const inviter = await member.client.users.fetch(inviterId);
         inviteData.name = inviter.username;
         inviteData.tag = inviter.tag;
-      } catch (ex) {
-        member.client.logger.error(`Parsing inviterId: ${inviterId}`, ex);
+      } catch {
         inviteData.name = "NA";
         inviteData.tag = "NA";
       }
@@ -72,77 +67,73 @@ const parse = async (content, member, inviterData = {}) => {
     .replaceAll(/{invites}/g, getEffectiveInvites(inviterData.invite_data));
 
   parsed = await parseMentions(parsed, member.guild);
-
   return parsed;
-};
+}
 
 /**
- * Builds a welcome/farewall message
+ * Builds a welcome/farewell embed message
  * @param {import('discord.js').GuildMember} member
  * @param {"WELCOME"|"FAREWELL"} type
  * @param {Object} config
  * @param {Object} inviterData
  */
-const buildGreeting = async (member, type, config, inviterData) => {
-  if (!config) return;
+async function buildGreeting(member, type, config, inviterData = {}) {
+  if (!config) return null;
+
   let content;
+  if (config.content) content = await parseContent(config.content, member, inviterData);
 
-  // Build content
-  if (config.content) content = await parse(config.content, member, inviterData);
-
-  // Build embed
   const embed = new EmbedBuilder();
   if (config.embed?.description) {
-    embed.setDescription(await parse(config.embed.description, member, inviterData));
+    embed.setDescription(await parseContent(config.embed.description, member, inviterData));
   }
   if (config.embed?.color) embed.setColor(config.embed.color);
-  if (config.embed?.thumbnail) embed.setThumbnail(member.user.displayAvatarURL());
+  if (config.embed?.thumbnail) embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true }));
   if (config.embed?.footer) {
-    embed.setFooter({ text: await parse(config.embed.footer, member, inviterData) });
+    embed.setFooter({ text: await parseContent(config.embed.footer, member, inviterData) });
   }
 
-  // Default message
-  if (!config.content && !config.embed?.description && !config.embed?.footer) {
+  if (!content && !config.embed?.description && !config.embed?.footer) {
     content =
       type === "WELCOME"
-        ? `Добро пожаловать на сервер, ${member} 🎉`
-        : `${member.user.tag} покинул(а) сервер 👋`;
+        ? `Welcome to server, ${member} 🎉`
+        : `${member.user.tag} leave from server 👋`;
     return { content };
   }
 
   return { content, embeds: [embed] };
-};
+}
 
 /**
- * Sends a welcome message
+ * Sends welcome message
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
 async function sendWelcome(member, inviterData = {}) {
   const config = (await getSettings(member.guild))?.welcome;
-  if (!config || !config.enabled) return;
+  if (!config?.enabled) return;
 
   const channel = member.guild.channels.cache.get(config.channel);
   if (!channel) return;
 
-  const response = await buildGreeting(member, "WELCOME", config, inviterData);
-  sendMessage(channel, response);
+  const message = await buildGreeting(member, "WELCOME", config, inviterData);
+  if (message) sendMessage(channel, message);
 }
 
 /**
- * Sends a farewell message
+ * Sends farewell message
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
 async function sendFarewell(member, inviterData = {}) {
   const config = (await getSettings(member.guild))?.farewell;
-  if (!config || !config.enabled) return;
+  if (!config?.enabled) return;
 
   const channel = member.guild.channels.cache.get(config.channel);
   if (!channel) return;
 
-  const response = await buildGreeting(member, "FAREWELL", config, inviterData);
-  sendMessage(channel, response);
+  const message = await buildGreeting(member, "FAREWELL", config, inviterData);
+  if (message) sendMessage(channel, message);
 }
 
 module.exports = {
