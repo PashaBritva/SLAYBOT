@@ -7,7 +7,6 @@
       "@root/*": ["./*"],
       "@src/*": ["./src/*"],
       "@commands/*": ["./src/commands/*"],
-      "@features/*": ["./src/features/*"],
       "@schemas/*": ["./src/schemas/*"],
       "@utils/*": ["./src/utils/*"]
     }
