@@ -1,42 +1,41 @@
-const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
-const { musicValidations } = require("@utils/botUtils");
+const { musicValidations } = require("@helpers/BotUtils");
 
-module.exports = class Skip extends Command {
-  constructor(client) {
-    super(client, {
-      name: "skip",
-      description: "skip the current song",
-      category: "MUSIC",
-      validations: musicValidations,
-      command: {
-        enabled: true,
-      },
-      slashCommand: {
-        enabled: true,
-      },
-    });
-  }
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "skip",
+  description: "skip the current song",
+  category: "MUSIC",
+  validations: musicValidations,
+  command: {
+    enabled: true,
+    aliases: ["next"],
+  },
+  slashCommand: {
+    enabled: true,
+  },
 
-  async messageRun(message) {
-    const response = await skip(message);
-    await message.reply(response);
-  }
+  async messageRun(message, args) {
+    const response = skip(message);
+    await message.safeReply(response);
+  },
 
   async interactionRun(interaction) {
-    const response = await skip(interaction);
+    const response = skip(interaction);
     await interaction.followUp(response);
-  }
+  },
 };
 
-async function skip({ client, guildId }) {
-  const player = client.musicManager.get(guildId);
+/**
+ * @param {import("discord.js").CommandInteraction|import("discord.js").Message} arg0
+ */
+function skip({ client, guildId }) {
+  const player = client.musicManager.getPlayer(guildId);
 
-  if (!player) return "> ❌ There is no active music player.";
-  if (!player.queue || !player.queue.current) return "> ❌ There is no song to skip.";
+  // check if current song is playing
+  if (!player.queue.current) return "⏯️ There is no song currently being played";
 
   const { title } = player.queue.current;
-  player.stop();
-
-  return `> ⏭️ Skipped: **${title}**`;
+  return player.queue.next() ? `⏯️ ${title} was skipped.` : "⏯️ There is no song to skip.";
 }

@@ -1,70 +1,60 @@
-const { Command } = require("@src/structures");
 const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
-const { postToBin } = require("@utils/httpUtils");
+const { postToBin } = require("@helpers/HttpUtils");
 
-module.exports = class PasteCommand extends Command {
-  constructor(client) {
-    super(client, {
-      name: "paste",
-      description: "Paste something to sourceb.in",
-      cooldown: 5,
-      category: "UTILITY",
-      botPermissions: ["EmbedLinks"],
-      command: {
-        enabled: true,
-        minArgsCount: 2,
-        usage: "<title> <content>",
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "paste",
+  description: "Paste something in sourceb.in",
+  cooldown: 5,
+  category: "UTILITY",
+  botPermissions: ["EmbedLinks"],
+  command: {
+    enabled: true,
+    minArgsCount: 2,
+    usage: "<title> <content>",
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "title",
+        description: "title for your content",
+        required: true,
+        type: ApplicationCommandOptionType.String,
       },
-      slashCommand: {
-        enabled: true,
-        options: [
-          {
-            name: "title",
-            description: "Title for your paste",
-            required: true,
-            type: ApplicationCommandOptionType.String,
-          },
-          {
-            name: "content",
-            description: "Content to be pasted",
-            required: true,
-            type: ApplicationCommandOptionType.String,
-          },
-        ],
+      {
+        name: "content",
+        description: "content to be posted to bin",
+        type: ApplicationCommandOptionType.String,
+        required: true,
       },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {import("discord.js").Message} message
-   * @param {string[]} args
-   */
   async messageRun(message, args) {
     const title = args.shift();
     const content = args.join(" ");
     const response = await paste(content, title);
-    return message.reply(response);
-  }
+    await message.safeReply(response);
+  },
 
-  /**
-   * @param {import("discord.js").CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
     const title = interaction.options.getString("title");
     const content = interaction.options.getString("content");
     const response = await paste(content, title);
-    return interaction.followUp(response);
-  }
+    await interaction.followUp(response);
+  },
 };
 
 async function paste(content, title) {
   const response = await postToBin(content, title);
-  if (!response) return "❌ Something went wrong while creating paste";
+  if (!response) return "❌ Something went wrong";
 
   const embed = new EmbedBuilder()
-    .setTitle("📑 Paste Created")
-    .setColor("Random")
-    .setDescription(`🔸 [View Online](${response.url})\n🔹 [Raw](${response.raw})`);
+    .setAuthor({ name: "Paste links" })
+    .setDescription(`🔸 Normal: ${response.url}\n🔹 Raw: ${response.raw}`);
 
   return { embeds: [embed] };
 }

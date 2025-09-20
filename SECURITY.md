@@ -5,10 +5,9 @@
 Our bot receives security updates only for the following versions:
 
 | Version | Supported          |
-| ------- | ----------------- |
-| 2.0.x   | :white_check_mark: |
-| 1.6.x   | :white_check_mark: |
-| < 1.6   | :x: |
+| ------- | ------------------ |
+| 2.1.x   | :white_check_mark: |
+| < 2.0.x | :x:                |
 
 > Please use supported versions to stay protected from bugs and security issues.
 

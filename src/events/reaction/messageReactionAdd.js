@@ -1,6 +1,6 @@
-const { reactionHandler } = require("@src/handlers");
+const { translationHandler, reactionRoleHandler } = require("@src/handlers");
 const { getSettings } = require("@schemas/Guild");
-const { getCountryFromFlag } = require("@utils/miscUtils");
+const { isValidEmoji } = require("country-emoji-languages");
 
 /**
  * @param {import('@src/structures').BotClient} client
@@ -9,24 +9,26 @@ const { getCountryFromFlag } = require("@utils/miscUtils");
  */
 module.exports = async (client, reaction, user) => {
   if (reaction.partial) {
-    try { await reaction.fetch(); } catch { return; }
+    try {
+      await reaction.fetch();
+    } catch (ex) {
+      return; // Failed to fetch message (maybe deleted)
+    }
   }
   if (user.partial) await user.fetch();
+  const { message, emoji } = reaction;
   if (user.bot) return;
 
-  const { message, emoji } = reaction;
+  // Reaction Roles
+  reactionRoleHandler.handleReactionAdd(reaction, user);
 
-  const role = reactionHandler.getRole(reaction);
-  if (role) {
-    const member = await message.guild.members.fetch(user.id).catch(() => null);
-    if (member) await member.roles.add(role).catch(() => {});
-  }
-
-  if (!emoji.id && message.content) {
-    const settings = await getSettings(message.guild);
-    if (settings.flag_translation?.enabled) {
-      const countryCode = getCountryFromFlag(emoji.name);
-      if (countryCode) reactionHandler.handleFlagReaction(countryCode, message, user);
+  // Handle Reaction Emojis
+  if (!emoji.id) {
+    // Translation By Flags
+    if (message.content && (await getSettings(message.guild)).flag_translation.enabled) {
+      if (isValidEmoji(emoji.name)) {
+        translationHandler.handleFlagReaction(emoji.name, message, user);
+      }
     }
   }
 };

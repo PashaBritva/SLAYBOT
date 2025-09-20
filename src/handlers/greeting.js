@@ -1,42 +1,16 @@
 const { EmbedBuilder } = require("discord.js");
 const { getSettings } = require("@schemas/Guild");
-const { sendMessage } = require("@utils/botUtils");
 
 /**
- * Parses mentions (<@ID>, <@&ID>, <#ID>) in the text
- * @param {string} text 
- * @param {import('discord.js').Guild} guild 
- * @returns {Promise<string>}
- */
-async function parseMentions(text, guild) {
-  text = text.replace(/<@!?(\d+)>/g, (match, id) => {
-    const user = guild.client.users.cache.get(id);
-    return user ? `<@${user.id}>` : match;
-  });
-
-  text = text.replace(/<@&(\d+)>/g, (match, id) => {
-    const role = guild.roles.cache.get(id);
-    return role ? role.toString() : match;
-  });
-
-  text = text.replace(/<#(\d+)>/g, (match, id) => {
-    const channel = guild.channels.cache.get(id);
-    return channel ? channel.toString() : match;
-  });
-
-  return text;
-}
-
-/**
- * Parses content with variables for welcome/farewell messages
  * @param {string} content
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
-async function parseContent(content, member, inviterData = {}) {
+const parse = async (content, member, inviterData = {}) => {
   const inviteData = {};
+
   const getEffectiveInvites = (inviteData = {}) =>
-    (inviteData.tracked + inviteData.added - inviteData.fake - inviteData.left) || 0;
+    inviteData.tracked + inviteData.added - inviteData.fake - inviteData.left || 0;
 
   if (content.includes("{inviter:")) {
     const inviterId = inviterData.member_id || "NA";
@@ -45,95 +19,112 @@ async function parseContent(content, member, inviterData = {}) {
         const inviter = await member.client.users.fetch(inviterId);
         inviteData.name = inviter.username;
         inviteData.tag = inviter.tag;
-      } catch {
+      } catch (ex) {
+        member.client.logger.error(`Parsing inviterId: ${inviterId}`, ex);
         inviteData.name = "NA";
         inviteData.tag = "NA";
       }
+    } else if (member.user.bot) {
+      inviteData.name = "OAuth";
+      inviteData.tag = "OAuth";
     } else {
       inviteData.name = inviterId;
       inviteData.tag = inviterId;
     }
   }
-
-  let parsed = content
+  return content
     .replaceAll(/\\n/g, "\n")
     .replaceAll(/{server}/g, member.guild.name)
     .replaceAll(/{count}/g, member.guild.memberCount)
-    .replaceAll(/{member}/g, member.toString())
-    .replaceAll(/{member:name}/g, member.displayName)
+    .replaceAll(/{member:nick}/g, member.displayName)
+    .replaceAll(/{member:name}/g, member.user.username)
+    .replaceAll(/{member:dis}/g, member.user.discriminator)
     .replaceAll(/{member:tag}/g, member.user.tag)
+    .replaceAll(/{member:mention}/g, member.toString())
+    .replaceAll(/{member:avatar}/g, member.displayAvatarURL())
     .replaceAll(/{inviter:name}/g, inviteData.name)
     .replaceAll(/{inviter:tag}/g, inviteData.tag)
     .replaceAll(/{invites}/g, getEffectiveInvites(inviterData.invite_data));
-
-  parsed = await parseMentions(parsed, member.guild);
-  return parsed;
-}
+};
 
 /**
- * Builds a welcome/farewell embed message
  * @param {import('discord.js').GuildMember} member
  * @param {"WELCOME"|"FAREWELL"} type
  * @param {Object} config
  * @param {Object} inviterData
  */
-async function buildGreeting(member, type, config, inviterData = {}) {
-  if (!config) return null;
-
+const buildGreeting = async (member, type, config, inviterData) => {
+  if (!config) return;
   let content;
-  if (config.content) content = await parseContent(config.content, member, inviterData);
 
+  // build content
+  if (config.content) content = await parse(config.content, member, inviterData);
+
+  // build embed
   const embed = new EmbedBuilder();
-  if (config.embed?.description) {
-    embed.setDescription(await parseContent(config.embed.description, member, inviterData));
+  if (config.embed.description) {
+    const parsed = await parse(config.embed.description, member, inviterData);
+    embed.setDescription(parsed);
   }
-  if (config.embed?.color) embed.setColor(config.embed.color);
-  if (config.embed?.thumbnail) embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true }));
-  if (config.embed?.footer) {
-    embed.setFooter({ text: await parseContent(config.embed.footer, member, inviterData) });
+  if (config.embed.color) embed.setColor(config.embed.color);
+  if (config.embed.thumbnail) embed.setThumbnail(member.user.displayAvatarURL());
+  if (config.embed.footer) {
+    const parsed = await parse(config.embed.footer, member, inviterData);
+    embed.setFooter({ text: parsed });
+  }
+  if (config.embed.image) {
+    const parsed = await parse(config.embed.image, member);
+    embed.setImage(parsed);
   }
 
-  if (!content && !config.embed?.description && !config.embed?.footer) {
+  // set default message
+  if (!config.content && !config.embed.description && !config.embed.footer) {
     content =
       type === "WELCOME"
-        ? `Welcome to server, ${member} 🎉`
-        : `${member.user.tag} leave from server 👋`;
+        ? `Welcome to the server, ${member.displayName} 🎉`
+        : `${member.user.username} has left the server 👋`;
     return { content };
   }
 
   return { content, embeds: [embed] };
-}
+};
 
 /**
- * Sends welcome message
+ * Send welcome message
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
 async function sendWelcome(member, inviterData = {}) {
   const config = (await getSettings(member.guild))?.welcome;
-  if (!config?.enabled) return;
+  if (!config || !config.enabled) return;
 
+  // check if channel exists
   const channel = member.guild.channels.cache.get(config.channel);
   if (!channel) return;
 
-  const message = await buildGreeting(member, "WELCOME", config, inviterData);
-  if (message) sendMessage(channel, message);
+  // build welcome message
+  const response = await buildGreeting(member, "WELCOME", config, inviterData);
+
+  channel.safeSend(response);
 }
 
 /**
- * Sends farewell message
+ * Send farewell message
  * @param {import('discord.js').GuildMember} member
  * @param {Object} inviterData
  */
 async function sendFarewell(member, inviterData = {}) {
   const config = (await getSettings(member.guild))?.farewell;
-  if (!config?.enabled) return;
+  if (!config || !config.enabled) return;
 
+  // check if channel exists
   const channel = member.guild.channels.cache.get(config.channel);
   if (!channel) return;
 
-  const message = await buildGreeting(member, "FAREWELL", config, inviterData);
-  if (message) sendMessage(channel, message);
+  // build farewell message
+  const response = await buildGreeting(member, "FAREWELL", config, inviterData);
+
+  channel.safeSend(response);
 }
 
 module.exports = {

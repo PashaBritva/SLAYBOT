@@ -1,61 +1,49 @@
-const { Command } = require("@src/structures");
-const { EmbedBuilder, ApplicationCommandOptionType, Message, CommandInteraction } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const { MESSAGES } = require("@root/config.js");
-const { getJson } = require("@utils/httpUtils");
-const outdent = require("outdent");
+const { getJson } = require("@helpers/HttpUtils");
+const { stripIndent } = require("common-tags");
 
-module.exports = class GithubCommand extends Command {
-  constructor(client) {
-    super(client, {
-      name: "github",
-      description: "shows github statistics of a user",
-      cooldown: 10,
-      category: "UTILITY",
-      botPermissions: ["EmbedLinks"],
-      command: {
-        enabled: true,
-        aliases: ["git"],
-        usage: "<username>",
-        minArgsCount: 1,
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "github",
+  description: "shows github statistics of a user",
+  cooldown: 10,
+  category: "UTILITY",
+  botPermissions: ["EmbedLinks"],
+  command: {
+    enabled: true,
+    aliases: ["git"],
+    usage: "<username>",
+    minArgsCount: 1,
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "username",
+        description: "github username",
+        type: ApplicationCommandOptionType.String,
+        required: true,
       },
-      slashCommand: {
-        enabled: true,
-        options: [
-          {
-            name: "username",
-            description: "github username",
-            type: ApplicationCommandOptionType.String,
-            required: true,
-          },
-        ],
-      },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
   async messageRun(message, args) {
     const username = args.join(" ");
     const response = await getGithubUser(username, message.author);
-    await message.reply(response);
-  }
+    await message.safeReply(response);
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
     const username = interaction.options.getString("username");
     const response = await getGithubUser(username, interaction.user);
     await interaction.followUp(response);
-  }
+  },
 };
 
-function websiteProvided(text) {
-  if (!text) return false;
-  return text.startsWith("http://") || text.startsWith("https://");
-}
+const websiteProvided = (text) => (text.startsWith("http://") ? true : text.startsWith("https://"));
 
 async function getGithubUser(target, author) {
   const response = await getJson(`https://api.github.com/users/${target}`);
@@ -77,6 +65,7 @@ async function getGithubUser(target, author) {
   } = json;
 
   let website = websiteProvided(blog) ? `[Click me](${blog})` : "Not Provided";
+  if (website == null) website = "Not Provided";
 
   const embed = new EmbedBuilder()
     .setAuthor({
@@ -84,27 +73,26 @@ async function getGithubUser(target, author) {
       url: userPageLink,
       iconURL: avatarUrl,
     })
-    .addFields([
+    .addFields(
       {
         name: "User Info",
-        value: outdent`
-          **Real Name**: *${name || "Not Provided"}*
-          **Location**: *${location || "Not Provided"}*
-          **GitHub ID**: *${githubId}*
-          **Website**: *${website}*
-        `,
+        value: stripIndent`
+        **Real Name**: *${name || "Not Provided"}*
+        **Location**: *${location}*
+        **GitHub ID**: *${githubId}*
+        **Website**: *${website}*\n`,
         inline: true,
       },
       {
         name: "Social Stats",
         value: `**Followers**: *${followers}*\n**Following**: *${following}*`,
         inline: true,
-      },
-    ])
+      }
+    )
     .setDescription(`**Bio**:\n${bio || "Not Provided"}`)
     .setImage(avatarUrl)
     .setColor(0x6e5494)
-    .setFooter({ text: `Requested by ${author.tag}` });
+    .setFooter({ text: `Requested by ${author.username}` });
 
   return { embeds: [embed] };
 }

@@ -1,60 +1,54 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ChannelType } = require("discord.js");
 const { EMBED_COLORS } = require("@root/config");
-const { outdent } = require("outdent");
+const { stripIndent } = require("common-tags");
+const channelTypes = require("@helpers/channelTypes");
 
-const channelTypes = {
-  GUILD_TEXT: "Text",
-  GUILD_PUBLIC_THREAD: "Public Thread",
-  GUILD_PRIVATE_THREAD: "Private Thread",
-  GUILD_NEWS: "News",
-  GUILD_NEWS_THREAD: "News Thread",
-  GUILD_VOICE: "Voice",
-  GUILD_STAGE_VOICE: "Stage Voice",
-};
-
+/**
+ * @param {import('discord.js').GuildChannel} channel
+ */
 module.exports = (channel) => {
-  const { id, name, topic, parent, position, type } = channel;
+  const { id, name, parent, position, type } = channel;
 
-  let desc = outdent`
-    ❯ ID: **${id}**
-    ❯ Name: **${name}**
-    ❯ Type: **${channelTypes[type] || type}**
-    ❯ Category: **${parent || "NA"}**
-    ❯ Topic: **${topic || "No topic set"}**\n
-    `;
+  let desc = stripIndent`
+      ❯ ID: **${id}**
+      ❯ Name: **${name}**
+      ❯ Type: **${channelTypes(channel.type)}**
+      ❯ Category: **${parent || "NA"}**\n
+      `;
 
-  if (type === "GUILD_TEXT") {
+  if (type === ChannelType.GuildText) {
     const { rateLimitPerUser, nsfw } = channel;
-    desc += outdent`
+    desc += stripIndent`
+      ❯ Topic: **${channel.topic || "No topic set"}**
       ❯ Position: **${position}**
       ❯ Slowmode: **${rateLimitPerUser}**
-      ❯ isNSFW: **${nsfw ? "✓" : "✕"}**
+      ❯ isNSFW: **${nsfw ? "✓" : "✕"}**\n
       `;
   }
 
-  if (type === "GUILD_PUBLIC_THREAD" || type === "GUILD_PRIVATE_THREAD") {
+  if (type === ChannelType.GuildPublicThread || type === ChannelType.GuildPrivateThread) {
     const { ownerId, archived, locked } = channel;
-    desc += outdent`
+    desc += stripIndent`
       ❯ Owner Id: **${ownerId}**
       ❯ Is Archived: **${archived ? "✓" : "✕"}**
-      ❯ Is Locked: **${locked ? "✓" : "✕"}**
+      ❯ Is Locked: **${locked ? "✓" : "✕"}**\n
       `;
   }
 
-  if (type === "GUILD_NEWS" || type === "GUILD_NEWS_THREAD") {
+  if (type === ChannelType.GuildNews || type === ChannelType.GuildNewsThread) {
     const { nsfw } = channel;
-    desc += outdent`
-      ❯ isNSFW: **${nsfw ? "✓" : "✕"}**
+    desc += stripIndent`
+      ❯ isNSFW: **${nsfw ? "✓" : "✕"}**\n
       `;
   }
 
-  if (type === "GUILD_VOICE" || type === "GUILD_STAGE_VOICE ") {
+  if (type === ChannelType.GuildVoice || type === ChannelType.GuildStageVoice) {
     const { bitrate, userLimit, full } = channel;
-    desc += outdent`
+    desc += stripIndent`
       ❯ Position: **${position}**
       ❯ Bitrate: **${bitrate}**
       ❯ User Limit: **${userLimit}**
-      ❯ isFull: **${full ? "✓" : "✕"}**
+      ❯ isFull: **${full ? "✓" : "✕"}**\n
       `;
   }
 

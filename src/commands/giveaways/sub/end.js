@@ -1,5 +1,3 @@
-const { error } = require("@src/helpers/logger");
-
 /**
  * @param {import('discord.js').GuildMember} member
  * @param {string} messageId
@@ -8,7 +6,7 @@ module.exports = async (member, messageId) => {
   if (!messageId) return "You must provide a valid message id.";
 
   // Permissions
-  if (!member.permissions.has("MANAGE_MESSAGES")) {
+  if (!member.permissions.has("ManageMessages")) {
     return "You need to have the manage messages permissions to start giveaways.";
   }
 
@@ -26,12 +24,8 @@ module.exports = async (member, messageId) => {
   try {
     await giveaway.end();
     return "Success! The giveaway has ended!";
-  } catch (err) {
-    if (member.client.logger) {
-      member.client.logger.error("Giveaway End", err);
-    } else {
-      error("Giveaway End Error:", err);
-    }
-    return `An error occurred while ending the giveaway: ${err.message}`;
+  } catch (error) {
+    member.client.logger.error("Giveaway End", error);
+    return `An error occurred while ending the giveaway: ${error.message}`;
   }
 };

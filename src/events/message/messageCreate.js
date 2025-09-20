@@ -1,6 +1,6 @@
-const { automodHandler, xpHandler } = require("@src/handlers");
+const { commandHandler, automodHandler, statsHandler } = require("@src/handlers");
+const { PREFIX_COMMANDS } = require("@root/config");
 const { getSettings } = require("@schemas/Guild");
-const { sendMessage } = require("@utils/botUtils");
 
 /**
  * @param {import('@src/structures').BotClient} client
@@ -8,39 +8,29 @@ const { sendMessage } = require("@utils/botUtils");
  */
 module.exports = async (client, message) => {
   if (!message.guild || message.author.bot) return;
-
   const settings = await getSettings(message.guild);
-  const { prefix } = settings;
 
-  if (message.content.includes(`<@!${client.user.id}>`) || message.content.includes(`<@${client.user.id}>`)) {
-    sendMessage(
-      message.channel,
-      `Hello and thank you for using ${client.user.username}!\n\n` +
-      `Here is some important information:\n• Prefix: \`${prefix}\`\n\n` +
-      `A good command to **get started** is \`${prefix}help\``
-    );
-  }
-
+  // command handler
   let isCommand = false;
+  if (PREFIX_COMMANDS.ENABLED) {
+    // check for bot mentions
+    if (message.content.includes(`${client.user.id}`)) {
+      message.channel.safeSend(`> My prefix is \`${settings.prefix}\``);
+    }
 
-  if (message.content.startsWith(prefix)) {
-    const args = message.content.slice(prefix.length).trim().split(/\s+/);
-    const invoke = args.shift().toLowerCase();
-    const cmd = client.getCommand(invoke);
-
-    if (cmd) {
-      isCommand = true;
-      try {
-        await cmd.executeCommand(message, args, invoke, prefix);
-      } catch (err) {
-        client.logger.error(`Error executing command: ${invoke}`, err);
-        sendMessage(message.channel, `❌ Failed to execute command \`${invoke}\``);
+    if (message.content && message.content.startsWith(settings.prefix)) {
+      const invoke = message.content.replace(`${settings.prefix}`, "").split(/\s+/)[0];
+      const cmd = client.getCommand(invoke);
+      if (cmd) {
+        isCommand = true;
+        commandHandler.handlePrefixCommand(message, cmd, settings);
       }
     }
   }
 
-  if (!isCommand) {
-    await automodHandler.performAutomod(message, settings);
-    if (settings.ranking.enabled) await xpHandler.handleXp(message);
-  }
+  // stats handler
+  if (settings.stats.enabled) await statsHandler.trackMessageStats(message, isCommand, settings);
+
+  // if not a command
+  if (!isCommand) await automodHandler.performAutomod(message, settings);
 };

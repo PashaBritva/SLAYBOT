@@ -1,45 +1,36 @@
-const { Command } = require("@src/structures");
-const { MessageEmbed, Message, CommandInteraction } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const { EMBED_COLORS, ECONOMY } = require("@root/config.js");
-const { diffHours, getRemainingTime } = require("@utils/miscUtils");
+const { diffHours, getRemainingTime } = require("@helpers/Utils");
 
-module.exports = class DailyCommand extends Command {
-  constructor(client) {
-    super(client, {
-      name: "daily",
-      description: "receive a daily bonus",
-      category: "ECONOMY",
-      botPermissions: ["EMBED_LINKS"],
-      command: {
-        enabled: true,
-      },
-      slashCommand: {
-        enabled: true,
-      },
-    });
-  }
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "daily",
+  description: "receive a daily bonus",
+  category: "ECONOMY",
+  botPermissions: ["EmbedLinks"],
+  command: {
+    enabled: true,
+  },
+  slashCommand: {
+    enabled: true,
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
   async messageRun(message, args) {
     const response = await daily(message.author);
     await message.safeReply(response);
-  }
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
     const response = await daily(interaction.user);
     await interaction.followUp(response);
-  }
+  },
 };
 
 async function daily(user) {
-  const userDb = await getUser(user.id);
+  const userDb = await getUser(user);
   let streak = 0;
 
   if (userDb.daily.timestamp) {

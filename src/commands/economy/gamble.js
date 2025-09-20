@@ -1,80 +1,71 @@
-const { Command } = require("@src/structures");
-const { MessageEmbed, Message, CommandInteraction } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const { getUser } = require("@schemas/User");
 const { EMBED_COLORS, ECONOMY } = require("@root/config.js");
-const { getRandomInt } = require("@utils/miscUtils");
+const { getRandomInt } = require("@helpers/Utils");
 
-module.exports = class Gamble extends Command {
-  constructor(client) {
-    super(client, {
-      name: "gamble",
-      description: "try your luck by gambling",
-      category: "ECONOMY",
-      botPermissions: ["EMBED_LINKS"],
-      command: {
-        enabled: true,
-        usage: "<amount>",
-        minArgsCount: 1,
-        aliases: ["slot"],
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "gamble",
+  description: "try your luck by gambling",
+  category: "ECONOMY",
+  botPermissions: ["EmbedLinks"],
+  command: {
+    enabled: true,
+    usage: "<amount>",
+    minArgsCount: 1,
+    aliases: ["slot"],
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "coins",
+        description: "number of coins to bet",
+        required: true,
+        type: ApplicationCommandOptionType.Integer,
       },
-      slashCommand: {
-        enabled: true,
-        options: [
-          {
-            name: "coins",
-            description: "number of coins to bet",
-            required: true,
-            type: "INTEGER",
-          },
-        ],
-      },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
   async messageRun(message, args) {
     const betAmount = parseInt(args[0]);
     if (isNaN(betAmount)) return message.safeReply("Bet amount needs to be a valid number input");
     const response = await gamble(message.author, betAmount);
     await message.safeReply(response);
-  }
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
   async interactionRun(interaction) {
     const betAmount = interaction.options.getInteger("coins");
     const response = await gamble(interaction.user, betAmount);
     await interaction.followUp(response);
-  }
+  },
 };
 
 function getEmoji() {
   const ran = getRandomInt(9);
   switch (ran) {
     case 1:
-      return "\uD83C\uDF52"; // 🍒
+      return "\uD83C\uDF52";
     case 2:
-      return "\uD83C\uDF4C"; // 🍌
+      return "\uD83C\uDF4C";
     case 3:
-      return "\uD83C\uDF51"; // 🍑
+      return "\uD83C\uDF51";
     case 4:
-      return "\uD83C\uDF45"; // 🍅
+      return "\uD83C\uDF45";
     case 5:
-      return "\uD83C\uDF49"; // 🍩
+      return "\uD83C\uDF49";
     case 6:
-      return "\uD83C\uDF47"; // 🍇
+      return "\uD83C\uDF47";
     case 7:
-      return "\uD83C\uDF53"; // 🍓
+      return "\uD83C\uDF53";
     case 8:
-      return "\uD83C\uDF50"; // 🍐
+      return "\uD83C\uDF50";
     case 9:
-      return "\uD83C\uDF4D"; // 🍍
+      return "\uD83C\uDF4D";
     default:
-      return "\uD83C\uDF52"; // 🍒
+      return "\uD83C\uDF52";
   }
 }
 
@@ -89,7 +80,7 @@ async function gamble(user, betAmount) {
   if (betAmount < 0) return "Bet amount cannot be negative";
   if (betAmount < 10) return "Bet amount cannot be less than 10";
 
-  const userDb = await getUser(user.id);
+  const userDb = await getUser(user);
   if (userDb.coins < betAmount)
     return `You do not have sufficient coins to gamble!\n**Coin balance:** ${userDb.coins || 0}${ECONOMY.CURRENCY}`;
 
@@ -100,13 +91,13 @@ async function gamble(user, betAmount) {
   const str = `
     **Gamble Amount:** ${betAmount}${ECONOMY.CURRENCY}
     **Multiplier:** 2x
-    ╔═════════╗
-    ║${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()}║
-    ╠═════════╣
-    ║${slot1} ║ ${slot2} ║ ${slot3}  ⟸
-    ╠═════════╣
-    ║${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()}║
-    ╚═════════╝
+    ╔══════════╗
+    ║ ${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()} ‎‎‎‎║
+    ╠══════════╣
+    ║ ${slot1} ║ ${slot2} ║ ${slot3} ⟸
+    ╠══════════╣
+    ║ ${getEmoji()} ║ ${getEmoji()} ║ ${getEmoji()} ║
+    ╚══════════╝
     `;
 
   const reward = calculateReward(betAmount, slot1, slot2, slot3);

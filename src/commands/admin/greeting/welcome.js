@@ -1,139 +1,180 @@
-const { Command } = require("@src/structures");
-const { isHex } = require("@utils/miscUtils");
-const { buildGreeting } = require("@src/handlers/greeting");
-const { Message, CommandInteraction } = require("discord.js");
-const { canSendEmbeds } = require("@utils/guildUtils");
-const { getSettings } = require("@schemas/Guild");
-const { sendMessage } = require("@utils/botUtils");
+const { isHex } = require("@helpers/Utils");
+const { buildGreeting } = require("@handlers/greeting");
+const { ApplicationCommandOptionType, ChannelType } = require("discord.js");
 
-module.exports = class Welcome extends Command {
-  constructor(client) {
-    super(client, {
-      name: "welcome",
-      description: "setup welcome message",
-      category: "ADMIN",
-      userPermissions: ["MANAGE_GUILD"],
-      command: {
-        enabled: true,
-        minArgsCount: 1,
-        subcommands: [
-          {
-            trigger: "status <on|off>",
-            description: "enable or disable welcome message",
-          },
-          {
-            trigger: "channel <#channel>",
-            description: "configure welcome message",
-          },
-          {
-            trigger: "preview",
-            description: "preview the configured welcome message",
-          },
-          {
-            trigger: "desc <text>",
-            description: "set embed description",
-          },
-          {
-            trigger: "thumbnail <ON|OFF>",
-            description: "enable/disable embed thumbnail",
-          },
-        ],
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "welcome",
+  description: "setup welcome message",
+  category: "ADMIN",
+  userPermissions: ["ManageGuild"],
+  command: {
+    enabled: true,
+    minArgsCount: 1,
+    subcommands: [
+      {
+        trigger: "status <on|off>",
+        description: "enable or disable welcome message",
       },
-      slashCommand: {
-        enabled: true,
-        ephemeral: true,
+      {
+        trigger: "channel <#channel>",
+        description: "configure welcome message",
+      },
+      {
+        trigger: "preview",
+        description: "preview the configured welcome message",
+      },
+      {
+        trigger: "desc <text>",
+        description: "set embed description",
+      },
+      {
+        trigger: "thumbnail <ON|OFF>",
+        description: "enable/disable embed thumbnail",
+      },
+      {
+        trigger: "color <hexcolor>",
+        description: "set embed color",
+      },
+      {
+        trigger: "footer <text>",
+        description: "set embed footer content",
+      },
+      {
+        trigger: "image <url>",
+        description: "set embed image",
+      },
+    ],
+  },
+  slashCommand: {
+    enabled: true,
+    ephemeral: true,
+    options: [
+      {
+        name: "status",
+        description: "enable or disable welcome message",
+        type: ApplicationCommandOptionType.Subcommand,
         options: [
           {
             name: "status",
-            description: "enable or disable welcome message",
-            type: "SUB_COMMAND",
-            options: [
+            description: "enabled or disabled",
+            required: true,
+            type: ApplicationCommandOptionType.String,
+            choices: [
               {
-                name: "status",
-                description: "enabled or disabled",
-                required: true,
-                type: "STRING",
-                choices: [
-                  {
-                    name: "ON",
-                    value: "ON",
-                  },
-                  {
-                    name: "OFF",
-                    value: "OFF",
-                  },
-                ],
+                name: "ON",
+                value: "ON",
+              },
+              {
+                name: "OFF",
+                value: "OFF",
               },
             ],
           },
-          {
-            name: "preview",
-            description: "preview the configured welcome message",
-            type: "SUB_COMMAND",
-          },
-          {
-            name: "channel",
-            description: "set welcome channel",
-            type: "SUB_COMMAND",
-            options: [
-              {
-                name: "channel",
-                description: "channel name",
-                type: "CHANNEL",
-                channelTypes: ["GUILD_TEXT"],
-                required: true,
-              },
-            ],
-          },
-          {
-            name: "desc",
-            description: "set embed description",
-            type: "SUB_COMMAND",
-            options: [
-              {
-                name: "content",
-                description: "description content",
-                type: "STRING",
-                required: true,
-              },
-            ],
-          },
-          {
-            name: "thumbnail",
-            description: "configure embed thumbnail",
-            type: "SUB_COMMAND",
-            options: [
-              {
-                name: "status",
-                description: "thumbnail status",
-                type: "STRING",
-                required: true,
-                choices: [
-                  {
-                    name: "ON",
-                    value: "ON",
-                  },
-                  {
-                    name: "OFF",
-                    value: "OFF",
-                  },
-                ],
-              },
-            ],
-          },
-
         ],
       },
-    });
-  }
+      {
+        name: "preview",
+        description: "preview the configured welcome message",
+        type: ApplicationCommandOptionType.Subcommand,
+      },
+      {
+        name: "channel",
+        description: "set welcome channel",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "channel",
+            description: "channel name",
+            type: ApplicationCommandOptionType.Channel,
+            channelTypes: [ChannelType.GuildText],
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "desc",
+        description: "set embed description",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "content",
+            description: "description content",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "thumbnail",
+        description: "configure embed thumbnail",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "status",
+            description: "thumbnail status",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            choices: [
+              {
+                name: "ON",
+                value: "ON",
+              },
+              {
+                name: "OFF",
+                value: "OFF",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: "color",
+        description: "set embed color",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "hex-code",
+            description: "hex color code",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "footer",
+        description: "set embed footer",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "content",
+            description: "footer content",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "image",
+        description: "set embed image",
+        type: ApplicationCommandOptionType.Subcommand,
+        options: [
+          {
+            name: "url",
+            description: "image url",
+            type: ApplicationCommandOptionType.String,
+            required: true,
+          },
+        ],
+      },
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
+  async messageRun(message, args, data) {
     const type = args[0].toLowerCase();
-    const settings = await getSettings(message.guild);
+    const settings = data.settings;
     let response;
 
     // preview
@@ -142,9 +183,10 @@ module.exports = class Welcome extends Command {
     }
 
     // status
-    if (type === "status") {
+    else if (type === "status") {
       const status = args[1]?.toUpperCase();
-      if (!status || !["ON", "OFF"].includes(status)) return message.reply("Invalid status. Value must be `on/off`");
+      if (!status || !["ON", "OFF"].includes(status))
+        return message.safeReply("Invalid status. Value must be `on/off`");
       response = await setStatus(settings, status);
     }
 
@@ -155,31 +197,49 @@ module.exports = class Welcome extends Command {
     }
 
     // desc
-    if (type === "desc") {
-      if (args.length < 2) return message.reply("\n\`{server}\` Server Names\`{count}\` Server Members\n\`{count}\` Server Members\n\`{member:name}\` Member Display Names\n\`{member:tag}\` Member tags\n\`{inviter:name}\` Inviter member Display Names\n\`{inviter:tag}\` Inviter member tags\n\`{invites}\` Invite Counts");
+    else if (type === "desc") {
+      if (args.length < 2) return message.safeReply("Insufficient arguments! Please provide valid content");
       const desc = args.slice(1).join(" ");
       response = await setDescription(settings, desc);
     }
 
     // thumbnail
-    if (type === "thumbnail") {
+    else if (type === "thumbnail") {
       const status = args[1]?.toUpperCase();
-      if (!status || !["ON", "OFF"].includes(status)) return message.reply("Invalid status. Value must be `on/off`");
+      if (!status || !["ON", "OFF"].includes(status))
+        return message.safeReply("Invalid status. Value must be `on/off`");
       response = await setThumbnail(settings, status);
     }
 
+    // color
+    else if (type === "color") {
+      const color = args[1];
+      if (!color || !isHex(color)) return message.safeReply("Invalid color. Value must be a valid hex color");
+      response = await setColor(settings, color);
+    }
 
+    // footer
+    else if (type === "footer") {
+      if (args.length < 2) return message.safeReply("Insufficient arguments! Please provide valid content");
+      const content = args.slice(1).join(" ");
+      response = await setFooter(settings, content);
+    }
 
-    return message.reply(response);
-  }
+    // image
+    else if (type === "image") {
+      const url = args[1];
+      if (!url) return message.safeReply("Invalid image url. Please provide a valid url");
+      response = await setImage(settings, url);
+    }
 
-  /**
-   *
-   * @param {CommandInteraction} interaction
-   */
-  async interactionRun(interaction) {
+    //
+    else response = "Invalid command usage!";
+    return message.safeReply(response);
+  },
+
+  async interactionRun(interaction, data) {
     const sub = interaction.options.getSubcommand();
-    const settings = await getSettings(interaction.guild);
+    const settings = data.settings;
 
     let response;
     switch (sub) {
@@ -203,14 +263,24 @@ module.exports = class Welcome extends Command {
         response = await setThumbnail(settings, interaction.options.getString("status"));
         break;
 
+      case "color":
+        response = await setColor(settings, interaction.options.getString("hex-code"));
+        break;
 
+      case "footer":
+        response = await setFooter(settings, interaction.options.getString("content"));
+        break;
+
+      case "image":
+        response = await setImage(settings, interaction.options.getString("url"));
+        break;
 
       default:
         response = "Invalid subcommand";
     }
 
     return interaction.followUp(response);
-  }
+  },
 };
 
 async function sendPreview(settings, member) {
@@ -220,7 +290,7 @@ async function sendPreview(settings, member) {
   if (!targetChannel) return "No channel is configured to send welcome message";
 
   const response = await buildGreeting(member, "WELCOME", settings.welcome);
-  await sendMessage(targetChannel, response);
+  await targetChannel.safeSend(response);
 
   return `Sent welcome preview to ${targetChannel.toString()}`;
 }
@@ -229,11 +299,11 @@ async function setStatus(settings, status) {
   const enabled = status.toUpperCase() === "ON" ? true : false;
   settings.welcome.enabled = enabled;
   await settings.save();
-  return `Configuration saved! Welcome message ${status ? "enabled" : "disabled"}`;
+  return `Configuration saved! Welcome message ${enabled ? "enabled" : "disabled"}`;
 }
 
 async function setChannel(settings, channel) {
-  if (!canSendEmbeds(channel)) {
+  if (!channel.canSendEmbeds()) {
     return (
       "Ugh! I cannot send greeting to that channel? I need the `Write Messages` and `Embed Links` permissions in " +
       channel.toString()
@@ -256,4 +326,20 @@ async function setThumbnail(settings, status) {
   return "Configuration saved! Welcome message updated";
 }
 
+async function setColor(settings, color) {
+  settings.welcome.embed.color = color;
+  await settings.save();
+  return "Configuration saved! Welcome message updated";
+}
 
+async function setFooter(settings, content) {
+  settings.welcome.embed.footer = content;
+  await settings.save();
+  return "Configuration saved! Welcome message updated";
+}
+
+async function setImage(settings, url) {
+  settings.welcome.embed.image = url;
+  await settings.save();
+  return "Configuration saved! Welcome message updated";
+}

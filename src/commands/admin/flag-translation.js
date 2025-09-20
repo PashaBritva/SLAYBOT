@@ -1,70 +1,59 @@
-const { Command } = require("@src/structures");
-const { Message, CommandInteraction } = require("discord.js");
-const { getSettings } = require("@schemas/Guild");
+const { ApplicationCommandOptionType } = require("discord.js");
 
-module.exports = class FlagTranslation extends Command {
-  constructor(client) {
-    super(client, {
-      name: "flagtranslation",
-      description: "configure flag translation in the server",
-      category: "ADMIN",
-      userPermissions: ["MANAGE_GUILD"],
-      command: {
-        enabled: true,
-        aliases: ["flagtr"],
-        minArgsCount: 1,
-        usage: "<on|off>",
-      },
-      slashCommand: {
-        enabled: true,
-        ephemeral: true,
-        options: [
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "flagtranslation",
+  description: "configure flag translation in the server",
+  category: "ADMIN",
+  userPermissions: ["ManageGuild"],
+  command: {
+    enabled: true,
+    aliases: ["flagtr"],
+    minArgsCount: 1,
+    usage: "<on|off>",
+  },
+  slashCommand: {
+    enabled: true,
+    ephemeral: true,
+    options: [
+      {
+        name: "status",
+        description: "enabled or disabled",
+        required: true,
+        type: ApplicationCommandOptionType.String,
+        choices: [
           {
-            name: "status",
-            description: "enabled or disabled",
-            required: true,
-            type: "STRING",
-            choices: [
-              {
-                name: "ON",
-                value: "ON",
-              },
-              {
-                name: "OFF",
-                value: "OFF",
-              },
-            ],
+            name: "ON",
+            value: "ON",
+          },
+          {
+            name: "OFF",
+            value: "OFF",
           },
         ],
       },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
+  async messageRun(message, args, data) {
     const status = args[0].toLowerCase();
-    if (!["on", "off"].includes(status)) return message.reply("Invalid status. Value must be `on/off`");
+    if (!["on", "off"].includes(status)) return message.safeReply("Invalid status. Value must be `on/off`");
 
-    const response = await setFlagTranslation(message.guild, status);
-    await message.reply(response);
-  }
+    const response = await setFlagTranslation(status, data.settings);
+    await message.safeReply(response);
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
-  async interactionRun(interaction) {
-    const response = await setFlagTranslation(interaction.guild, interaction.options.getString("status"));
+  async interactionRun(interaction, data) {
+    const response = await setFlagTranslation(interaction.options.getString("status"), data.settings);
     await interaction.followUp(response);
-  }
+  },
 };
 
-async function setFlagTranslation(guild, input) {
+async function setFlagTranslation(input, settings) {
   const status = input.toLowerCase() === "on" ? true : false;
 
-  const settings = await getSettings(guild);
   settings.flag_translation.enabled = status;
   await settings.save();
 

@@ -1,60 +1,72 @@
-const { Command } = require("@src/structures");
-const { musicValidations } = require("@utils/botUtils");
+const { musicValidations } = require("@helpers/BotUtils");
+const { LoopType } = require("@lavaclient/queue");
+const { ApplicationCommandOptionType } = require("discord.js");
 
-module.exports = class Loop extends Command {
-  constructor(client) {
-    super(client, {
-      name: "loop",
-      description: "loops the current song or the entire queue",
-      category: "MUSIC",
-      validations: musicValidations,
-      command: {
-        enabled: true,
-        minArgsCount: 1,
-        usage: "<queue|track>",
-      },
-      slashCommand: {
-        enabled: true,
-        options: [
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "loop",
+  description: "loops the song or queue",
+  category: "MUSIC",
+  validations: musicValidations,
+  command: {
+    enabled: true,
+    minArgsCount: 1,
+    usage: "<queue|track>",
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "type",
+        type: ApplicationCommandOptionType.String,
+        description: "The entity you want to loop",
+        required: false,
+        choices: [
           {
-            name: "type",
-            type: "STRING",
-            description: "Select what you want to loop",
-            required: false,
-            choices: [
-              { name: "Track", value: "track" },
-              { name: "Queue", value: "queue" },
-            ],
+            name: "queue",
+            value: "queue",
+          },
+          {
+            name: "track",
+            value: "track",
           },
         ],
       },
-    });
-  }
+    ],
+  },
 
   async messageRun(message, args) {
-    const type = args[0]?.toLowerCase() === "queue" ? "queue" : "track";
+    const input = args[0].toLowerCase();
+    const type = input === "queue" ? "queue" : "track";
     const response = toggleLoop(message, type);
-    await message.reply(response);
-  }
+    await message.safeReply(response);
+  },
 
   async interactionRun(interaction) {
     const type = interaction.options.getString("type") || "track";
     const response = toggleLoop(interaction, type);
     await interaction.followUp(response);
-  }
+  },
 };
 
+/**
+ * @param {import("discord.js").CommandInteraction|import("discord.js").Message} arg0
+ * @param {"queue"|"track"} type
+ */
 function toggleLoop({ client, guildId }, type) {
-  const player = client.musicManager.get(guildId);
-  if (!player) return "> 🚫 No music is currently playing!";
+  const player = client.musicManager.getPlayer(guildId);
 
+  // track
   if (type === "track") {
-    player.setTrackRepeat(!player.trackRepeat);
-    return `> 🔁 Track loop is now **${player.trackRepeat ? "enabled" : "disabled"}**`;
-  } else if (type === "queue") {
-    player.setQueueRepeat(!player.queueRepeat);
-    return `> 🔂 Queue loop is now **${player.queueRepeat ? "enabled" : "disabled"}**`;
+    player.queue.setLoop(LoopType.Song);
+    return "Loop mode is set to `track`";
   }
 
-  return "> ❌ Invalid loop type. Use `track` or `queue`.";
+  // queue
+  else if (type === "queue") {
+    player.queue.setLoop(1);
+    return "Loop mode is set to `queue`";
+  }
 }

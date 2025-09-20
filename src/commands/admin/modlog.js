@@ -1,69 +1,60 @@
-const { Command } = require("@src/structures");
-const { getSettings } = require("@schemas/Guild");
-const { Message, CommandInteraction } = require("discord.js");
-const { canSendEmbeds } = require("@utils/guildUtils");
+const { ApplicationCommandOptionType, ChannelType } = require("discord.js");
 
-module.exports = class ModLog extends Command {
-  constructor(client) {
-    super(client, {
-      name: "modlog",
-      description: "enable or disable moderation logs",
-      category: "ADMIN",
-      userPermissions: ["MANAGE_GUILD"],
-      command: {
-        enabled: true,
-        usage: "<#channel|off>",
-        minArgsCount: 1,
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "modlog",
+  description: "enable or disable moderation logs",
+  category: "ADMIN",
+  userPermissions: ["ManageGuild"],
+  command: {
+    enabled: true,
+    usage: "<#channel|off>",
+    minArgsCount: 1,
+  },
+  slashCommand: {
+    enabled: true,
+    ephemeral: true,
+    options: [
+      {
+        name: "channel",
+        description: "channels to send mod logs",
+        required: false,
+        type: ApplicationCommandOptionType.Channel,
+        channelTypes: [ChannelType.GuildText],
       },
-      slashCommand: {
-        enabled: true,
-        ephemeral: true,
-        options: [
-          {
-            name: "channel",
-            description: "channels to send mod logs",
-            required: false,
-            type: "CHANNEL",
-            channelTypes: ["GUILD_TEXT"],
-          },
-        ],
-      },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
+  async messageRun(message, args, data) {
     const input = args[0].toLowerCase();
     let targetChannel;
 
     if (input === "none" || input === "off" || input === "disable") targetChannel = null;
     else {
-      if (message.mentions.channels.size === 0) return message.reply("Incorrect command usage");
+      if (message.mentions.channels.size === 0) return message.safeReply("Incorrect command usage");
       targetChannel = message.mentions.channels.first();
     }
 
-    const response = await setChannel(message.guild, targetChannel);
-    return message.reply(response);
-  }
+    const response = await setChannel(targetChannel, data.settings);
+    return message.safeReply(response);
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
-  async interactionRun(interaction) {
-    const response = await setChannel(interaction.guild, interaction.options.getChannel("channel"));
+  async interactionRun(interaction, data) {
+    const channel = interaction.options.getChannel("channel");
+    const response = await setChannel(channel, data.settings);
     return interaction.followUp(response);
-  }
+  },
 };
 
-async function setChannel(guild, targetChannel) {
-  const settings = await getSettings(guild);
+async function setChannel(targetChannel, settings) {
+  if (!targetChannel && !settings.modlog_channel) {
+    return "It is already disabled";
+  }
 
-  if (targetChannel) {
-    if (!canSendEmbeds(targetChannel))
-      return "Ugh! I cannot send logs to that channel? I need the `Write Messages` and `Embed Links` permissions in that channel";
+  if (targetChannel && !targetChannel.canSendEmbeds()) {
+    return "Ugh! I cannot send logs to that channel? I need the `Write Messages` and `Embed Links` permissions in that channel";
   }
 
   settings.modlog_channel = targetChannel?.id;

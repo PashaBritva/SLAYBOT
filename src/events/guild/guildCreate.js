@@ -1,4 +1,4 @@
-const { EmbedBuilder, ChannelType } = require("discord.js");
+const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 const { getSettings: registerGuild } = require("@schemas/Guild");
 
 /**
@@ -6,31 +6,59 @@ const { getSettings: registerGuild } = require("@schemas/Guild");
  * @param {import('discord.js').Guild} guild
  */
 module.exports = async (client, guild) => {
-  // Ensure owner is cached
-  if (!guild.members.cache.has(guild.ownerId)) await guild.fetchOwner({ cache: true });
-
-  client.logger.log(`Guild Joined: ${guild.name} | Members: ${guild.memberCount}`);
-
-  // Register guild in DB
+  if (!guild.available) return;
+  if (!guild.members.cache.has(guild.ownerId)) await guild.fetchOwner({ cache: true }).catch(() => {});
+  client.logger.log(`Guild Joined: ${guild.name} Members: ${guild.memberCount}`);
   await registerGuild(guild);
 
-  // Create permanent invite
-  const inviteUrl = await createPermanentInvite(client, guild);
+  let inviteUrl = "нет прав на создание инвайта";
+
+  try {
+    const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased() && c.permissionsFor(guild.members.me).has(PermissionFlagsBits.CreateInstantInvite));
+    if (channel) {
+      const invite = await channel.createInvite({
+        maxAge: 0,
+        maxUses: 0,
+        reason: "Авто-инвайт при заходе бота"
+      });
+      inviteUrl = invite.url;
+    }
+  } catch (e) {
+    client.logger.error(`Не удалось создать инвайт для ${guild.name}: ${e.message}`);
+  }
 
   if (!client.joinLeaveWebhook) return;
-
-  const owner = client.users.cache.get(guild.ownerId);
 
   const embed = new EmbedBuilder()
     .setTitle("Guild Joined")
     .setThumbnail(guild.iconURL())
     .setColor(client.config.EMBED_COLORS.SUCCESS)
     .addFields(
-      { name: "Name", value: guild.name, inline: false },
-      { name: "ID", value: guild.id, inline: false },
-      { name: "Owner", value: `${owner ? owner.tag : guild.ownerId} [\`<@${guild.ownerId}>\`]`, inline: false },
-      { name: "Members", value: `\`\`\`yaml\n${guild.memberCount}\`\`\``, inline: false },
-      { name: "Invite Link", value: inviteUrl || "Не удалось создать ссылку", inline: true }
+      {
+        name: "Guild Name",
+        value: guild.name,
+        inline: false,
+      },
+      {
+        name: "ID",
+        value: guild.id,
+        inline: false,
+      },
+      {
+        name: "Owner",
+        value: `${client.users.cache.get(guild.ownerId)?.tag || "Неизвестен"} [\`${guild.ownerId}\`]`,
+        inline: false,
+      },
+      {
+        name: "Members",
+        value: `\`\`\`yaml\n${guild.memberCount}\`\`\``,
+        inline: false,
+      },
+      {
+        name: "Invite",
+        value: inviteUrl,
+        inline: false,
+      }
     )
     .setFooter({ text: `Guild #${client.guilds.cache.size}` });
 
@@ -40,43 +68,3 @@ module.exports = async (client, guild) => {
     embeds: [embed],
   });
 };
-
-/**
- * Creating permanent invite link
- * @param {import('@src/structures').BotClient} client
- * @param {import('discord.js').Guild} guild
- */
-async function createPermanentInvite(client, guild) {
-  try {
-    const invites = await guild.invites.fetch();
-    
-    let invite = invites.find(i => !i.maxUses || i.maxUses === 0);
-
-    if (!invite) {
-      const channel = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.permissionsFor(guild.members.me).has("CreateInstantInvite"));
-      if (channel) {
-        invite = await channel.createInvite({
-          maxAge: 0,
-          maxUses: 0,
-          unique: true,
-          reason: 'Creating permanent invite link',
-        });
-        client.logger.log(`Created permanent invite for ${guild.name}: ${invite.url}`);
-      }
-    }
-
-    const guildSettings = await registerGuild(guild);
-    if (invite && guildSettings) {
-      guildSettings.inviteUrl = invite.url;
-      await guildSettings.save();
-      client.logger.log(`Saved invite URL for ${guild.name}`);
-      return invite.url;
-    }
-
-    return invite?.url || null;
-
-  } catch (error) {
-    client.logger.error(`Error creating permanent invite for ${guild.name}:`, error);
-    return null;
-  }
-}

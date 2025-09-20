@@ -1,76 +1,66 @@
-const { Command } = require("@src/structures");
-const { getSettings } = require("@schemas/Guild");
-const { cacheGuildInvites } = require("@src/handlers/invite");
-const { Message, CommandInteraction } = require("discord.js");
+const { cacheGuildInvites, resetInviteCache } = require("@handlers/invite");
+const { ApplicationCommandOptionType, ChannelType } = require("discord.js");
 
-module.exports = class InviteTracker extends Command {
-  constructor(client) {
-    super(client, {
-      name: "invitetracker",
-      description: "enable or disable invite tracking in the server",
-      category: "INVITE",
-      userPermissions: ["MANAGE_GUILD"],
-      command: {
-        enabled: true,
-        aliases: ["invitetracking"],
-        usage: "<ON|OFF>",
-        minArgsCount: 1,
-      },
-      slashCommand: {
-        enabled: true,
-        options: [
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "invitetracker",
+  description: "enable or disable invite tracking in the server",
+  category: "INVITE",
+  userPermissions: ["ManageGuild"],
+  command: {
+    enabled: true,
+    aliases: ["invitetracking"],
+    usage: "<ON|OFF>",
+    minArgsCount: 1,
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "status",
+        description: "configuration status",
+        required: true,
+        type: ApplicationCommandOptionType.String,
+        choices: [
           {
-            name: "status",
-            description: "configuration status",
-            required: true,
-            type: "STRING",
-            choices: [
-              {
-                name: "ON",
-                value: "ON",
-              },
-              {
-                name: "OFF",
-                value: "OFF",
-              },
-            ],
+            name: "ON",
+            value: "ON",
+          },
+          {
+            name: "OFF",
+            value: "OFF",
           },
         ],
       },
-    });
-  }
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
+  async messageRun(message, args, data) {
     const status = args[0].toLowerCase();
-    if (!["on", "off"].includes(status)) return message.reply("Invalid status. Value must be `on/off`");
-    const response = await setStatus(message, status);
-    await message.reply(response);
-  }
+    if (!["on", "off"].includes(status)) return message.safeReply("Invalid status. Value must be `on/off`");
+    const response = await setStatus(message, status, data.settings);
+    await message.safeReply(response);
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
-  async interactionRun(interaction) {
+  async interactionRun(interaction, data) {
     const status = interaction.options.getString("status");
-    const response = await setStatus(interaction, status);
+    const response = await setStatus(interaction, status, data.settings);
     await interaction.followUp(response);
-  }
+  },
 };
 
-async function setStatus({ guild }, input) {
+async function setStatus({ guild }, input, settings) {
   const status = input.toUpperCase() === "ON" ? true : false;
 
   if (status) {
-    if (!guild.me.permissions.has(["MANAGE_GUILD", "MANAGE_CHANNELS"])) {
+    if (!guild.members.me.permissions.has(["ManageGuild", "ManageChannels"])) {
       return "Oops! I am missing `Manage Server`, `Manage Channels` permission!\nI cannot track invites";
     }
 
     const channelMissing = guild.channels.cache
-      .filter((ch) => ch.type === "GUILD_TEXT" && !ch.permissionsFor(guild.me).has("MANAGE_CHANNELS"))
+      .filter((ch) => ch.type === ChannelType.GuildText && !ch.permissionsFor(guild.members.me).has("ManageChannels"))
       .map((ch) => ch.name);
 
     if (channelMissing.length > 1) {
@@ -81,10 +71,9 @@ async function setStatus({ guild }, input) {
 
     await cacheGuildInvites(guild);
   } else {
-    guild.client.inviteCache.delete(guild.id);
+    resetInviteCache(guild.id);
   }
 
-  const settings = await getSettings(guild);
   settings.invite.tracking = status;
   await settings.save();
 

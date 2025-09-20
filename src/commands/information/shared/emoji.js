@@ -1,8 +1,8 @@
-const { Util, MessageEmbed } = require("discord.js");
+const { parseEmoji, EmbedBuilder } = require("discord.js");
 const { EMBED_COLORS } = require("@root/config");
 
 module.exports = (emoji) => {
-  let custom = Util.parseEmoji(emoji);
+  let custom = parseEmoji(emoji);
   if (!custom.id) return "This is not a valid guild emoji";
 
   let url = `https://cdn.discordapp.com/emojis/${custom.id}.${custom.animated ? "gif?v=1" : "png"}`;

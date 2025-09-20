@@ -1,7 +1,9 @@
 .env
-old_commands
 node_modules
 logs/*
 config.js
 package-lock.json
 *.code-workspace
+.vscode
+.github
+docker-compose.yml

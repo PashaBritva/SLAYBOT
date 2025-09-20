@@ -1,90 +1,107 @@
-const { inspect } = require("util");
-const { EmbedBuilder, WebhookClient } = require("discord.js");
-const chalk = require("chalk");
-const moment = require("moment");
-const nodeLogger = require("simple-node-logger");
 const config = require("@root/config");
+const { EmbedBuilder, WebhookClient } = require("discord.js");
+const pino = require("pino");
 
-const simpleLogger = nodeLogger.createRollingFileLogger({
-  logDirectory: "./logs",
-  fileNamePattern: "roll-<DATE>.log",
-  dateFormat: "yyyy.MM.DD",
-});
+const webhookLogger = process.env.ERROR_LOGS ? new WebhookClient({ url: process.env.ERROR_LOGS }) : undefined;
 
-simpleLogger.setLevel("debug");
+const today = new Date();
+const pinoLogger = pino.default(
+  {
+    level: "debug",
+  },
+  pino.multistream([
+    {
+      level: "info",
+      stream: pino.transport({
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "yyyy-mm-dd HH:mm:ss",
+          ignore: "pid,hostname",
+          singleLine: false,
+          hideObject: true,
+          customColors: "info:blue,warn:yellow,error:red",
+        },
+      }),
+    },
+    {
+      level: "debug",
+      stream: pino.destination({
+        dest: `${process.cwd()}/logs/combined-${today.getFullYear()}.${today.getMonth() + 1}.${today.getDate()}.log`,
+        sync: true,
+        mkdir: true,
+      }),
+    },
+  ])
+);
 
-const errorWebhook = process.env.ERROR_LOGS
-  ? new WebhookClient({ url: process.env.ERROR_LOGS })
-  : undefined;
-
-const sendWebhook = (content, err) => {
+function sendWebhook(content, err) {
   if (!content && !err) return;
-  const errString = err?.stack || err;
 
   const embed = new EmbedBuilder()
     .setColor(config.EMBED_COLORS.ERROR)
-    .setAuthor({ name: err?.name || "Error" });
-
-  if (errString)
-    embed.setDescription(
-      "```js\n" + (errString.length > 1020 ? `${errString.substr(0, 1000)}...` : errString) + "\n```"
+    .setAuthor({ name: err?.name || "Error" })
+    .addFields(
+      { name: "Description", value: content || "NA" },
+      { name: "Details", value: "```js\n" + (err?.stack?.slice(0, 4000) || "No details") + "\n```" }
     );
-  if (err?.description) embed.addFields({ name: "Description", value: content });
-  if (err?.message) {
-    embed.addFields({
-      name: "Message",
-      value: err.message.length > 1020 ? `${err.message.substring(0, 1020)}...` : err.message,
-    });
+
+  webhookLogger.send({ username: "Logs", embeds: [embed] }).catch(() => {});
+}
+
+module.exports = class Logger {
+  /**
+   * @param {string} content
+   */
+  static success(content) {
+    pinoLogger.info(content);
   }
 
-  if (errorWebhook) {
-    errorWebhook.send({
-      username: "Logs",
-      embeds: [embed],
-    });
+  /**
+   * @param {string} content
+   */
+  static log(content) {
+    pinoLogger.info(content);
+  }
+
+  /**
+   * @param {string} content
+   */
+  static warn(content) {
+    pinoLogger.warn(content);
+  }
+
+  /**
+   * @param {string} content
+   * @param {object} ex
+   */
+  static error(content, ex) {
+    let message = content;
+    let details = "";
+
+    if (ex instanceof Error) {
+      message += `: ${ex.message}`;
+      details = ex.stack || ex.message;
+    } else if (typeof ex === "object" && ex !== null) {
+      try {
+        details = JSON.stringify(ex, null, 2);
+      } catch {
+        details = String(ex);
+      }
+    } else if (ex) {
+      details = String(ex);
+    }
+
+    pinoLogger.error({ details }, message);
+
+    if (webhookLogger) sendWebhook(content, { name: "Error", stack: details, message });
+  }
+
+
+  /**
+   * @param {string} content
+   */
+  static debug(content) {
+    pinoLogger.debug(content);
   }
 };
-
-const sendLogs = (level, content, data) => {
-  const timestamp = `${moment().format("yyyy-MM-DD HH:mm:ss:SSS")}`;
-
-  switch (level) {
-    case "log":
-      console.log(`[${chalk.cyan(timestamp)}] [${chalk.blueBright("info")}] ${content} `);
-      simpleLogger.info(content);
-      break;
-
-    case "success":
-      console.log(`[${chalk.cyan(timestamp)}] [${chalk.green(level)}] ${content} `);
-      simpleLogger.info(content);
-      break;
-
-    case "warn":
-      console.log(`[${chalk.cyan(timestamp)}] [${chalk.yellow("warn")}] ${content} `);
-      simpleLogger.warn(content);
-      break;
-
-    case "error":
-      console.log(
-        `[${chalk.cyan(timestamp)}] [${chalk.redBright(level)}] ${content} ${
-          data ? ": " + inspect(data.message ?? data) : ""
-        }`
-      );
-      simpleLogger.error(data ?? content);
-      if (errorWebhook) sendWebhook(content, data);
-      break;
-
-    case "debug":
-      simpleLogger.debug(content);
-      break;
-
-    default:
-      break;
-  }
-};
-
-exports.success = (content) => sendLogs("success", content);
-exports.warn = (content) => sendLogs("warn", content);
-exports.error = (content, ex) => sendLogs("error", content, ex);
-exports.debug = (content) => sendLogs("debug", content);
-exports.log = (content) => sendLogs("log", content);

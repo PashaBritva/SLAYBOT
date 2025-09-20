@@ -6,7 +6,8 @@ const { getSettings } = require("@schemas/Guild");
  * @param {import('discord.js').Guild} guild
  */
 module.exports = async (client, guild) => {
-  client.logger.log(`Guild Left: ${guild.name} | Members: ${guild.memberCount}`);
+  if (!guild.available) return;
+  client.logger.log(`Guild Left: ${guild.name} Members: ${guild.memberCount}`);
 
   const settings = await getSettings(guild);
   settings.data.leftAt = new Date();
@@ -14,25 +15,13 @@ module.exports = async (client, guild) => {
 
   if (!client.joinLeaveWebhook) return;
 
-  let ownerTag = guild.ownerId;
+  let ownerTag;
+  const ownerId = guild.ownerId || settings.data.owner;
   try {
-    const owner = await client.users.fetch(guild.ownerId);
-    ownerTag = `${owner.tag} [\`${owner.id}\`]`;
-  } catch {
-    ownerTag = `${guild.ownerId}`;
-  }
-
-  let inviteUrl = settings.inviteUrl || null;
-  if (!inviteUrl) {
-    try {
-      const textChannel = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.permissionsFor(guild.members.me).has("CreateInstantInvite"));
-      if (textChannel) {
-        const invite = await textChannel.createInvite({ maxAge: 0, maxUses: 0, unique: true, reason: "Permanent invite for logs" });
-        inviteUrl = invite.url;
-      }
-    } catch (err) {
-      client.logger.error(`Failed to create invite for ${guild.name}:`, err);
-    }
+    const owner = await client.users.fetch(ownerId);
+    ownerTag = owner.tag;
+  } catch (err) {
+    ownerTag = "Deleted User";
   }
 
   const embed = new EmbedBuilder()
@@ -40,11 +29,26 @@ module.exports = async (client, guild) => {
     .setThumbnail(guild.iconURL())
     .setColor(client.config.EMBED_COLORS.ERROR)
     .addFields(
-      { name: "Name", value: guild.name, inline: false },
-      { name: "ID", value: guild.id, inline: false },
-      { name: "Owner", value: ownerTag, inline: false },
-      { name: "Members", value: `\`\`\`yaml\n${guild.memberCount}\`\`\``, inline: false },
-      { name: "Invite Link", value: inviteUrl || "Не удалось создать ссылку", inline: true }
+      {
+        name: "Guild Name",
+        value: guild.name || "NA",
+        inline: false,
+      },
+      {
+        name: "ID",
+        value: guild.id,
+        inline: false,
+      },
+      {
+        name: "Owner",
+        value: `${ownerTag} [\`${ownerId}\`]`,
+        inline: false,
+      },
+      {
+        name: "Members",
+        value: `\`\`\`yaml\n${guild.memberCount}\`\`\``,
+        inline: false,
+      }
     )
     .setFooter({ text: `Guild #${client.guilds.cache.size}` });
 

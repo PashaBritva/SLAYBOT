@@ -9,7 +9,7 @@ module.exports = async (member, messageId, addDuration, newPrize, newWinnerCount
   if (!messageId) return "You must provide a valid message id.";
 
   // Permissions
-  if (!member.permissions.has("MANAGE_MESSAGES")) {
+  if (!member.permissions.has("ManageMessages")) {
     return "You need to have the manage messages permissions to start giveaways.";
   }
 
@@ -23,7 +23,7 @@ module.exports = async (member, messageId, addDuration, newPrize, newWinnerCount
 
   try {
     await member.client.giveawaysManager.edit(messageId, {
-      addTime: 60000 * addDuration || 0,
+      addTime: addDuration || 0,
       newPrize: newPrize || giveaway.prize,
       newWinnerCount: newWinnerCount || giveaway.winnerCount,
     });

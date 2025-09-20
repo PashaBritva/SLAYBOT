@@ -11,39 +11,24 @@ module.exports = async (client, member) => {
   const { guild } = member;
   const settings = await getSettings(guild);
 
-  if (Array.isArray(settings.autorole) && settings.autorole.length > 0) {
-    const rolesToAdd = settings.autorole
-      .map((id) => guild.roles.cache.get(id))
-      .filter((role) => role && role.editable);
-
-    if (rolesToAdd.length > 0) {
-      try {
-        await member.roles.add(rolesToAdd);
-      } catch (error) {
-        client.logger.error(`Failed to add roles to member ${member.id}:`, error);
-      }
-    }
+  // Autorole
+  if (settings.autorole) {
+    const role = guild.roles.cache.get(settings.autorole);
+    if (role) member.roles.add(role).catch((err) => {});
   }
 
-  if (settings.counters?.length > 0) {
-    const hasCounter = settings.counters.some((doc) => 
-      ["MEMBERS", "BOTS", "USERS"].includes(doc.counter_type?.toUpperCase())
-    );
-
-    if (hasCounter) {
-      if (member.user.bot) {
-        settings.data.bots = (settings.data.bots || 0) + 1;
-        await settings.save();
-      }
-      if (!client.counterUpdateQueue.includes(guild.id)) {
-        client.counterUpdateQueue.push(guild.id);
-      }
+  // Check for counter channel
+  if (settings.counters.find((doc) => ["MEMBERS", "BOTS", "USERS"].includes(doc.counter_type.toUpperCase()))) {
+    if (member.user.bot) {
+      settings.data.bots += 1;
+      await settings.save();
     }
+    if (!client.counterUpdateQueue.includes(guild.id)) client.counterUpdateQueue.push(guild.id);
   }
 
-  const inviterData = settings.invite?.tracking
-    ? await inviteHandler.trackJoinedMember(member)
-    : {};
+  // Check if invite tracking is enabled
+  const inviterData = settings.invite.tracking ? await inviteHandler.trackJoinedMember(member) : {};
 
+  // Send welcome message
   greetingHandler.sendWelcome(member, inviterData);
 };

@@ -1,7 +1,10 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ChannelType, GuildVerificationLevel } = require("discord.js");
 const { EMBED_COLORS } = require("@root/config");
 const moment = require("moment");
 
+/**
+ * @param {import('discord.js').Guild} guild
+ */
 module.exports = async (guild) => {
   const { name, id, preferredLocale, channels, roles, ownerId } = guild;
 
@@ -9,11 +12,13 @@ module.exports = async (guild) => {
   const createdAt = moment(guild.createdAt);
 
   const totalChannels = channels.cache.size;
-  const categories = channels.cache.filter((c) => c.type === "GUILD_CATEGORY").size;
-  const textChannels = channels.cache.filter((c) => c.type === "GUILD_TEXT").size;
-  const voiceChannels = channels.cache.filter((c) => c.type === "GUILD_VOICE" || c.type === "GUILD_STAGE_VOICE").size;
+  const categories = channels.cache.filter((c) => c.type === ChannelType.GuildCategory).size;
+  const textChannels = channels.cache.filter((c) => c.type === ChannelType.GuildText).size;
+  const voiceChannels = channels.cache.filter(
+    (c) => c.type === ChannelType.GuildVoice || c.type === ChannelType.GuildStageVoice
+  ).size;
   const threadChannels = channels.cache.filter(
-    (c) => c.type === "GUILD_PRIVATE_THREAD" || c.type === "GUILD_PUBLIC_THREAD"
+    (c) => c.type === ChannelType.PrivateThread || c.type === ChannelType.PublicThread
   ).size;
 
   const memberCache = guild.members.cache;
@@ -29,18 +34,20 @@ module.exports = async (guild) => {
     return members.filter((m) => m.roles.cache.has(role.id)).size;
   };
 
-  const rolesString = roles.cache
+  let rolesString = roles.cache
     .filter((r) => !r.name.includes("everyone"))
     .map((r) => `${r.name}[${getMembersInRole(memberCache, r)}]`)
     .join(", ");
 
+  if (rolesString.length > 1024) rolesString = rolesString.substring(0, 1020) + "...";
+
   let { verificationLevel } = guild;
   switch (guild.verificationLevel) {
-    case "VERY_HIGH":
+    case GuildVerificationLevel.VeryHigh:
       verificationLevel = "┻�?┻ミヽ(ಠ益ಠ)ノ彡┻�?┻";
       break;
 
-    case "HIGH":
+    case GuildVerificationLevel.High:
       verificationLevel = "(╯°□°）╯︵ ┻�?┻";
       break;
 
@@ -51,7 +58,7 @@ module.exports = async (guild) => {
   let desc = "";
   desc = `${desc + "❯"} **Id:** ${id}\n`;
   desc = `${desc + "❯"} **Name:** ${name}\n`;
-  desc = `${desc + "❯"} **Owner:** ${owner.user.tag}\n`;
+  desc = `${desc + "❯"} **Owner:** ${owner.user.username}\n`;
   desc = `${desc + "❯"} **Region:** ${preferredLocale}\n`;
   desc += "\n";
 
@@ -60,23 +67,45 @@ module.exports = async (guild) => {
     .setThumbnail(guild.iconURL())
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(desc)
-    .addField(`Server Members [${all}]`, `\`\`\`Members: ${users}\nBots: ${bots}\`\`\``, true)
-    .addField(`Online Stats [${onlineAll}]`, `\`\`\`Members: ${onlineUsers}\nBots: ${onlineBots}\`\`\``, true)
-    .addField(
-      `Categories and channels [${totalChannels}]`,
-      `\`\`\`Categories: ${categories} | Text: ${textChannels} | Voice: ${voiceChannels} | Thread: ${threadChannels}\`\`\``,
-      false
-    )
-    .addField(`Roles [${rolesCount}]`, `\`\`\`${rolesString}\`\`\``, false)
-    .addField("Verification", `\`\`\`${verificationLevel}\`\`\``, true)
-    .addField("Boost Count", `\`\`\`${guild.premiumSubscriptionCount}\`\`\``, true)
-    .addField(
-      `Server Created [${createdAt.fromNow()}]`,
-      `\`\`\`${createdAt.format("dddd, Do MMMM YYYY")}\`\`\``,
-      false
+    .addFields(
+      {
+        name: `Server Members [${all}]`,
+        value: `\`\`\`Members: ${users}\nBots: ${bots}\`\`\``,
+        inline: true,
+      },
+      {
+        name: `Online Stats [${onlineAll}]`,
+        value: `\`\`\`Members: ${onlineUsers}\nBots: ${onlineBots}\`\`\``,
+        inline: true,
+      },
+      {
+        name: `Categories and channels [${totalChannels}]`,
+        value: `\`\`\`Categories: ${categories} | Text: ${textChannels} | Voice: ${voiceChannels} | Thread: ${threadChannels}\`\`\``,
+        inline: false,
+      },
+      {
+        name: `Roles [${rolesCount}]`,
+        value: `\`\`\`${rolesString}\`\`\``,
+        inline: false,
+      },
+      {
+        name: "Verification",
+        value: `\`\`\`${verificationLevel}\`\`\``,
+        inline: true,
+      },
+      {
+        name: "Boost Count",
+        value: `\`\`\`${guild.premiumSubscriptionCount}\`\`\``,
+        inline: true,
+      },
+      {
+        name: `Server Created [${createdAt.fromNow()}]`,
+        value: `\`\`\`${createdAt.format("dddd, Do MMMM YYYY")}\`\`\``,
+        inline: false,
+      }
     );
 
-  if (guild.splashURL) embed.setImage(guild.splashURL);
+  if (guild.splashURL()) embed.setImage(guild.splashURL({ extension: "png", size: 256 }));
 
   return { embeds: [embed] };
 };

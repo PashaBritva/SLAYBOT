@@ -5,19 +5,17 @@ const {
   Partials,
   WebhookClient,
   ApplicationCommandType,
-  PermissionFlagsBits,
 } = require("discord.js");
 const path = require("path");
-const fs = require("fs");
 const { table } = require("table");
-const mongoose = require("mongoose");
-const logger = require("../helpers/logger");
-const error = require("../helpers/logger");
-const MusicManager = require("./MusicManager");
-const Command = require("./Command");
-const BaseContext = require("./BaseContext");
-const GiveawayManager = require("./GiveawayManager");
-const { convertSlashCommands, convertOptions } = require("@utils/convertSlashTypes");
+const Logger = require("../helpers/Logger");
+const { recursiveReadDirSync } = require("../helpers/Utils");
+const { validateCommand, validateContext } = require("../helpers/Validator");
+const { schemas } = require("@src/database/mongoose");
+const CommandCategory = require("./CommandCategory");
+const lavaclient = require("../handlers/lavaclient");
+const giveawaysHandler = require("../handlers/giveaway");
+const { DiscordTogether } = require("discord-together");
 
 module.exports = class BotClient extends Client {
   constructor() {
@@ -25,143 +23,193 @@ module.exports = class BotClient extends Client {
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildInvites,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildVoiceStates,
       ],
       partials: [Partials.User, Partials.Message, Partials.Reaction],
-      allowedMentions: { repliedUser: false },
-      rest: { timeout: 20000 },
+      allowedMentions: {
+        repliedUser: false,
+      },
+      restRequestTimeout: 20000,
     });
 
-    this.config = require("@root/config");
+    this.wait = require("util").promisify(setTimeout); // await client.wait(1000) - Wait 1 second
+    this.config = require("@root/config"); // load the config file
 
-    this.commands = [];
-    this.commandIndex = new Collection();
-    this.slashCommands = new Collection();
-    this.contextMenus = new Collection();
-    this.counterUpdateQueue = [];
+    /**
+     * @type {import('@structures/Command')[]}
+     */
+    this.commands = []; // store actual command
+    this.commandIndex = new Collection(); // store (alias, arrayIndex) pair
 
-    this.cmdCooldownCache = new Collection();
-    this.ctxCooldownCache = new Collection();
-    this.xpCooldownCache = new Collection();
-    this.inviteCache = new Collection();
-    this.antiScamCache = new Collection();
-    this.flagTranslateCache = new Collection();
+    /**
+     * @type {Collection<string, import('@structures/Command')>}
+     */
+    this.slashCommands = new Collection(); // store slash commands
 
+    /**
+     * @type {Collection<string, import('@structures/BaseContext')>}
+     */
+    this.contextMenus = new Collection(); // store contextMenus
+    this.counterUpdateQueue = []; // store guildId's that needs counter update
+
+    // initialize webhook for sending guild join/leave details
     this.joinLeaveWebhook = process.env.JOIN_LEAVE_LOGS
       ? new WebhookClient({ url: process.env.JOIN_LEAVE_LOGS })
       : undefined;
 
-    this.musicManager = new MusicManager(this);
-    this.giveawaysManager = new GiveawayManager(this);
-    this.logger = logger;
+    // Music Player
+    if (this.config.MUSIC.ENABLED) this.musicManager = lavaclient(this);
+
+    // Giveaways
+    if (this.config.GIVEAWAYS.ENABLED) this.giveawaysManager = giveawaysHandler(this);
+
+    // Logger
+    this.logger = Logger;
+
+    // Database
+    this.database = schemas;
+
+    // Discord Together
+    this.discordTogether = new DiscordTogether(this);
   }
 
-  async initializeMongoose() {
-    this.logger.log(`Connecting to MongoDb...`);
-    await mongoose.connect(process.env.MONGO_CONNECTION);
-    this.logger.success("Mongoose: Database connection established");
-  }
-
-  getAbsoluteFilePaths(directory) {
-    const filePaths = [];
-    const readDir = (dir) => {
-      const files = fs.readdirSync(path.join(__appRoot, dir));
-      files.forEach((file) => {
-        const stat = fs.lstatSync(path.join(__appRoot, dir, file));
-        if (stat.isDirectory()) return readDir(path.join(dir, file));
-        if (path.extname(file) === ".js") filePaths.push(path.join(__appRoot, dir, file));
-        else this.logger.debug(`Skipping ${file}: not a js file`);
-      });
-    };
-    readDir(directory);
-    return filePaths;
-  }
-
+  /**
+   * Load all events from the specified directory
+   * @param {string} directory directory containing the event files
+   */
   loadEvents(directory) {
     this.logger.log(`Loading events...`);
-    let success = 0, failed = 0;
-    const clientEvents = [], musicEvents = [];
+    let success = 0;
+    let failed = 0;
+    const clientEvents = [];
 
-    this.getAbsoluteFilePaths(directory).forEach((filePath) => {
+    recursiveReadDirSync(directory).forEach((filePath) => {
       const file = path.basename(filePath);
-      const dirName = path.basename(path.dirname(filePath));
       try {
         const eventName = path.basename(file, ".js");
         const event = require(filePath);
-        if (dirName === "music") this.musicManager.on(eventName, event.bind(null, this)), musicEvents.push([file, "✓"]);
-        else this.on(eventName, event.bind(null, this)), clientEvents.push([file, "✓"]);
+
+        this.on(eventName, event.bind(null, this));
+        clientEvents.push([file, "✓"]);
+
         delete require.cache[require.resolve(filePath)];
-        success++;
+        success += 1;
       } catch (ex) {
-        failed++;
+        failed += 1;
         this.logger.error(`loadEvent - ${file}`, ex);
       }
     });
 
-    console.log(table(clientEvents, { header: { alignment: "center", content: "Client Events" }, singleLine: true, columns: [{ width: 25 }, { width: 5, alignment: "center" }] }));
-    console.log(table(musicEvents, { header: { alignment: "center", content: "Music Events" }, singleLine: true, columns: [{ width: 25 }, { width: 5, alignment: "center" }] }));
+    console.log(
+      table(clientEvents, {
+        header: {
+          alignment: "center",
+          content: "Client Events",
+        },
+        singleLine: true,
+        columns: [{ width: 25 }, { width: 5, alignment: "center" }],
+      })
+    );
+
     this.logger.log(`Loaded ${success + failed} events. Success (${success}) Failed (${failed})`);
   }
 
-  getCommand(invoke) { 
+  /**
+   * Find command matching the invoke
+   * @param {string} invoke
+   * @returns {import('@structures/Command')|undefined}
+   */
+  getCommand(invoke) {
     const index = this.commandIndex.get(invoke.toLowerCase());
     return index !== undefined ? this.commands[index] : undefined;
   }
 
+  /**
+   * Register command file in the client
+   * @param {import("@structures/Command")} cmd
+   */
   loadCommand(cmd) {
+    // Check if category is disabled
+    if (cmd.category && CommandCategory[cmd.category]?.enabled === false) {
+      this.logger.debug(`Skipping Command ${cmd.name}. Category ${cmd.category} is disabled`);
+      return;
+    }
+    // Prefix Command
     if (cmd.command?.enabled) {
       const index = this.commands.length;
-      if (this.commandIndex.has(cmd.name)) throw new Error(`Command ${cmd.name} already registered`);
-      cmd.command.aliases.forEach((alias) => {
-        if (this.commandIndex.has(alias)) throw new Error(`Alias ${alias} already registered`);
-        this.commandIndex.set(alias.toLowerCase(), index);
-      });
+      if (this.commandIndex.has(cmd.name)) {
+        throw new Error(`Command ${cmd.name} already registered`);
+      }
+      if (Array.isArray(cmd.command.aliases)) {
+        cmd.command.aliases.forEach((alias) => {
+          if (this.commandIndex.has(alias)) throw new Error(`Alias ${alias} already registered`);
+          this.commandIndex.set(alias.toLowerCase(), index);
+        });
+      }
       this.commandIndex.set(cmd.name.toLowerCase(), index);
       this.commands.push(cmd);
-    } else this.logger.debug(`Skipping command ${cmd.name}. Disabled!`);
+    } else {
+      this.logger.debug(`Skipping command ${cmd.name}. Disabled!`);
+    }
 
+    // Slash Command
     if (cmd.slashCommand?.enabled) {
       if (this.slashCommands.has(cmd.name)) throw new Error(`Slash Command ${cmd.name} already registered`);
       this.slashCommands.set(cmd.name, cmd);
-    } else this.logger.debug(`Skipping slash command ${cmd.name}. Disabled!`);
+    } else {
+      this.logger.debug(`Skipping slash command ${cmd.name}. Disabled!`);
+    }
   }
 
+  /**
+   * Load all commands from the specified directory
+   * @param {string} directory
+   */
   loadCommands(directory) {
     this.logger.log(`Loading commands...`);
-    this.getAbsoluteFilePaths(directory).forEach((filePath) => {
-      const file = path.basename(filePath);
+    const files = recursiveReadDirSync(directory);
+    for (const file of files) {
       try {
-        const cmdClass = require(filePath);
-        if (!(cmdClass.prototype instanceof Command)) return;
-        const cmd = new cmdClass(this);
+        delete require.cache[require.resolve(file)];
+        const cmd = require(file);
+        if (typeof cmd !== "object") continue;
+        validateCommand(cmd);
         this.loadCommand(cmd);
       } catch (ex) {
         this.logger.error(`Failed to load ${file} Reason: ${ex.message}`);
       }
-    });
+    }
+
     this.logger.success(`Loaded ${this.commands.length} commands`);
     this.logger.success(`Loaded ${this.slashCommands.size} slash commands`);
     if (this.slashCommands.size > 100) throw new Error("A maximum of 100 slash commands can be enabled");
   }
 
+  /**
+   * Load all contexts from the specified directory
+   * @param {string} directory
+   */
   loadContexts(directory) {
     this.logger.log(`Loading contexts...`);
-    this.getAbsoluteFilePaths(directory).forEach((filePath) => {
-      const file = path.basename(filePath);
+    const files = recursiveReadDirSync(directory);
+    for (const file of files) {
       try {
-        const ctxClass = require(filePath);
-        if (!(ctxClass.prototype instanceof BaseContext)) return;
-        const ctx = new ctxClass(this);
+        delete require.cache[require.resolve(file)];
+        const ctx = require(file);
+        if (typeof ctx !== "object") continue;
+        validateContext(ctx);
         if (!ctx.enabled) return this.logger.debug(`Skipping context ${ctx.name}. Disabled!`);
         if (this.contextMenus.has(ctx.name)) throw new Error(`Context already exists with that name`);
         this.contextMenus.set(ctx.name, ctx);
       } catch (ex) {
-        this.logger.error(`Context: Failed to load ${file} Reason: ${ex.message}`);
+        this.logger.error(`Failed to load ${file} Reason: ${ex.message}`);
       }
-    });
+    }
 
     const userContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.User).size;
     const messageContexts = this.contextMenus.filter((ctx) => ctx.type === ApplicationCommandType.Message).size;
@@ -173,73 +221,126 @@ module.exports = class BotClient extends Client {
     this.logger.success(`Loaded ${messageContexts} MESSAGE contexts`);
   }
 
+  /**
+   * Register slash command on startup
+   * @param {string} [guildId]
+   */
   async registerInteractions(guildId) {
-    for (const cmd of this.slashCommands.values()) {
-      if (cmd.slashCommand?.options) {
-        cmd.slashCommand.options = convertOptions(cmd.slashCommand.options);
-        for (const opt of cmd.slashCommand.options) {
-          if (!Object.values(ApplicationCommandOptionType).includes(opt.type)) {
-            throw new error(`Invalid option type in command ${cmd.name}: ${opt.type}`);
-          }
-        }
+    const toRegister = [];
+
+    // filter slash commands
+    if (this.config.INTERACTIONS.SLASH) {
+      this.slashCommands
+        .map((cmd) => ({
+          name: cmd.name,
+          description: cmd.description,
+          type: ApplicationCommandType.ChatInput,
+          options: cmd.slashCommand.options,
+        }))
+        .forEach((s) => toRegister.push(s));
+    }
+
+    // filter contexts
+    if (this.config.INTERACTIONS.CONTEXT) {
+      this.contextMenus
+        .map((ctx) => ({
+          name: ctx.name,
+          type: ctx.type,
+        }))
+        .forEach((c) => toRegister.push(c));
+    }
+
+    // Register GLobally
+    if (!guildId) {
+      await this.application.commands.set(toRegister);
+    }
+
+    // Register for a specific guild
+    else if (guildId && typeof guildId === "string") {
+      const guild = this.guilds.cache.get(guildId);
+      if (!guild) {
+        this.logger.error(`Failed to register interactions in guild ${guildId}`, new Error("No matching guild"));
+        return;
+      }
+      await guild.commands.set(toRegister);
+    }
+
+    // Throw an error
+    else {
+      throw new Error("Did you provide a valid guildId to register interactions");
+    }
+
+    this.logger.success("Successfully registered interactions");
+  }
+
+  /**
+   * @param {string} search
+   * @param {Boolean} exact
+   */
+  async resolveUsers(search, exact = false) {
+    if (!search || typeof search !== "string") return [];
+    const users = [];
+
+    // check if userId is passed
+    const patternMatch = search.match(/(\d{17,20})/);
+    if (patternMatch) {
+      const id = patternMatch[1];
+      const fetched = await this.users.fetch(id, { cache: true }).catch(() => {}); // check if mentions contains the ID
+      if (fetched) {
+        users.push(fetched);
+        return users;
       }
     }
 
-    const toRegister = [];
+    // check if exact tag is matched in cache
+    const matchingTags = this.users.cache.filter((user) => user.tag === search);
+    if (exact && matchingTags.size === 1) users.push(matchingTags.first());
+    else matchingTags.forEach((match) => users.push(match));
 
-    if (this.config.INTERACTIONS.SLASH) convertSlashCommands(this.slashCommands);
-
-    if (this.config.INTERACTIONS.SLASH) {
-      this.slashCommands.map((cmd) => ({
-        name: cmd.name,
-        description: cmd.description,
-        type: ApplicationCommandType.ChatInput,
-        options: cmd.slashCommand.options,
-      })).forEach((s) => toRegister.push(s));
+    // check matching username
+    if (!exact) {
+      this.users.cache
+        .filter(
+          (x) =>
+            x.username === search ||
+            x.username.toLowerCase().includes(search.toLowerCase()) ||
+            x.tag.toLowerCase().includes(search.toLowerCase())
+        )
+        .forEach((user) => users.push(user));
     }
 
-    if (this.config.INTERACTIONS.CONTEXT) {
-      this.contextMenus.map((ctx) => ({
-        name: ctx.name,
-        type: ctx.type,
-      })).forEach((c) => toRegister.push(c));
-    }
-
-    if (!guildId) await this.application.commands.set(toRegister);
-    else if (typeof guildId === "string") {
-      const guild = this.guilds.cache.get(guildId);
-      if (!guild) throw new Error(`No guilds found matching ${guildId}`);
-      await guild.commands.set(toRegister);
-    } else throw new Error(`Did you provide a valid guildId to register slash commands`);
-
-    this.logger.success("Successfully registered slash commands");
+    return users;
   }
 
+  /**
+   * Get bot's invite
+   */
   getInvite() {
     return this.generateInvite({
       scopes: ["bot", "applications.commands"],
       permissions: [
-        PermissionFlagsBits.AddReactions,
-        PermissionFlagsBits.AttachFiles,
-        PermissionFlagsBits.BanMembers,
-        PermissionFlagsBits.ChangeNickname,
-        PermissionFlagsBits.Connect,
-        PermissionFlagsBits.DeafenMembers,
-        PermissionFlagsBits.EmbedLinks,
-        PermissionFlagsBits.KickMembers,
-        PermissionFlagsBits.ManageChannels,
-        PermissionFlagsBits.ManageGuild,
-        PermissionFlagsBits.ManageMessages,
-        PermissionFlagsBits.ManageNicknames,
-        PermissionFlagsBits.ManageRoles,
-        PermissionFlagsBits.MoveMembers,
-        PermissionFlagsBits.MuteMembers,
-        PermissionFlagsBits.PrioritySpeaker,
-        PermissionFlagsBits.ReadMessageHistory,
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.SendMessagesInThreads,
-        PermissionFlagsBits.Speak,
-        PermissionFlagsBits.ViewChannel,
+        "AddReactions",
+        "AttachFiles",
+        "BanMembers",
+        "ChangeNickname",
+        "Connect",
+        "DeafenMembers",
+        "EmbedLinks",
+        "KickMembers",
+        "ManageChannels",
+        "ManageGuild",
+        "ManageMessages",
+        "ManageNicknames",
+        "ManageRoles",
+        "ModerateMembers",
+        "MoveMembers",
+        "MuteMembers",
+        "PrioritySpeaker",
+        "ReadMessageHistory",
+        "SendMessages",
+        "SendMessagesInThreads",
+        "Speak",
+        "ViewChannel",
       ],
     });
   }

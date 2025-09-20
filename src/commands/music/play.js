@@ -1,114 +1,210 @@
-const { Command } = require("@src/structures");
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
 const prettyMs = require("pretty-ms");
-const { EMBED_COLORS } = require("@root/config");
+const { EMBED_COLORS, MUSIC } = require("@root/config");
+const { SpotifyItemType } = require("@lavaclient/spotify");
 
-module.exports = class Play extends Command {
-  constructor(client) {
-    super(client, {
-      name: "play",
-      description: "play a song from youtube",
-      category: "MUSIC",
-      botPermissions: ["EMBED_LINKS"],
-      command: {
-        enabled: true,
-        usage: "<song-name>",
-        minArgsCount: 1,
-        aliases: ["p"],
+const search_prefix = {
+  YT: "ytsearch",
+  YTM: "ytmsearch",
+  SC: "scsearch",
+};
+
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "play",
+  description: "play a song from youtube",
+  category: "MUSIC",
+  botPermissions: ["EmbedLinks"],
+  command: {
+    enabled: true,
+    usage: "<song-name>",
+    minArgsCount: 1,
+  },
+  slashCommand: {
+    enabled: true,
+    options: [
+      {
+        name: "query",
+        description: "song name or url",
+        type: ApplicationCommandOptionType.String,
+        required: true,
       },
-      slashCommand: {
-        enabled: true,
-        options: [
-          { name: "query", description: "song name or url", type: "STRING", required: true },
-        ],
-      },
-    });
-  }
+    ],
+  },
 
   async messageRun(message, args) {
     const query = args.join(" ");
-    const response = await play(message, message.author, query);
-    await message.reply(response);
-  }
+    const response = await play(message, query);
+    await message.safeReply(response);
+  },
 
   async interactionRun(interaction) {
     const query = interaction.options.getString("query");
-    const response = await play(interaction, interaction.user, query);
+    const response = await play(interaction, query);
     await interaction.followUp(response);
-  }
+  },
 };
 
-async function play({ member, guild, channel }, user, query) {
-  if (!member.voice.channel) return "> 🚫 You need to join a voice channel first";
+/**
+ * @param {import("discord.js").CommandInteraction|import("discord.js").Message} arg0
+ * @param {string} query
+ */
+async function play({ member, guild, channel }, query) {
+  if (!member.voice.channel) return "🚫 You need to join a voice channel first";
 
-  let player = guild.client.musicManager.get(guild.id);
-
-  if (player && member.voice.channel.id !== guild.me.voice.channel?.id) {
-    return "> 🚫 You must be in the same voice channel as mine";
+  let player = guild.client.musicManager.getPlayer(guild.id);
+  if (player && !guild.members.me.voice.channel) {
+    player.disconnect();
+    await guild.client.musicManager.destroyPlayer(guild.id);
   }
 
-  if (!player) {
-    player = guild.client.musicManager.create({
-      guild: guild.id,
-      textChannel: channel.id,
-      voiceChannel: member.voice.channel.id,
-      volume: 50,
-    });
+  if (player && member.voice.channel !== guild.members.me.voice.channel) {
+    return "🚫 You must be in the same voice channel as mine";
   }
 
-  if (player.state !== "CONNECTED") player.connect();
+  let embed = new EmbedBuilder().setColor(EMBED_COLORS.BOT_EMBED);
+  let tracks;
+  let description = "";
 
-  let res;
   try {
-    res = await player.search(query, user);
-    if (res.loadType === "LOAD_FAILED") {
-      if (!player.queue.current) player.destroy();
-      throw res.exception;
+    if (guild.client.musicManager.spotify.isSpotifyUrl(query)) {
+      if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+        return "🚫 Spotify songs cannot be played. Please contact the bot owner";
+      }
+
+      const item = await guild.client.musicManager.spotify.load(query);
+      switch (item?.type) {
+        case SpotifyItemType.Track: {
+          const track = await item.resolveYoutubeTrack();
+          tracks = [track];
+          description = `[${track.info.title}](${track.info.uri})`;
+          break;
+        }
+
+        case SpotifyItemType.Artist:
+          tracks = await item.resolveYoutubeTracks();
+          description = `Artist: [**${item.name}**](${query})`;
+          break;
+
+        case SpotifyItemType.Album:
+          tracks = await item.resolveYoutubeTracks();
+          description = `Album: [**${item.name}**](${query})`;
+          break;
+
+        case SpotifyItemType.Playlist:
+          tracks = await item.resolveYoutubeTracks();
+          description = `Playlist: [**${item.name}**](${query})`;
+          break;
+
+        default:
+          return "🚫 An error occurred while searching for the song";
+      }
+
+      if (!tracks) guild.client.logger.debug({ query, item });
+    } else {
+      const res = await guild.client.musicManager.rest.loadTracks(
+        /^https?:\/\//.test(query) ? query : `${search_prefix[MUSIC.DEFAULT_SOURCE]}:${query}`
+      );
+      switch (res.loadType) {
+        case "LOAD_FAILED":
+          guild.client.logger.error("Search Exception", (res.exception?.message || "Unknown error"));
+          return "🚫 There was an error while searching" + (res.exception?.message || "Unknown error");
+
+        case "NO_MATCHES":
+          return `No results found matching ${query}`;
+
+        case "PLAYLIST_LOADED":
+          tracks = res.tracks;
+          description = res.playlistInfo.name;
+          break;
+
+        case "TRACK_LOADED":
+        case "SEARCH_RESULT": {
+          const [track] = res.tracks;
+          tracks = [track];
+          break;
+        }
+
+        default:
+          guild.client.logger.debug("Unknown loadType", res.message);
+          return "🚫 An error occurred while searching for the song";
+      }
+
+      if (!tracks) guild.client.logger.debug({ query, res });
     }
-  } catch (err) {
-    guild.client.logger.error("Search Exception", err);
-    return "There was an error while searching";
+  } catch (error) {
+    guild.client.logger.error("Search Exception", typeof error === "object" ? JSON.stringify(error) : error);
+    return "🚫 An error occurred while searching for the song";
   }
 
-  const embed = new EmbedBuilder().setColor(EMBED_COLORS.BOT_EMBED);
-  let track;
+  if (!tracks) return "🚫 An error occurred while searching for the song";
 
-  switch (res.loadType) {
-    case "NO_MATCHES":
-      if (!player.queue.current) player.destroy();
-      return `No results found matching ${query}`;
-
-    case "TRACK_LOADED":
-    case "SEARCH_RESULT":
-      track = res.tracks[0];
-      player.queue.add(track);
-      if (!player.playing && !player.paused && !player.queue.size) player.play();
-
+  if (tracks.length === 1) {
+    const track = tracks[0];
+    if (!player?.playing && !player?.paused && !player?.queue.tracks.length) {
+      embed.setAuthor({ name: "Added Track to queue" });
+    } else {
+      const fields = [];
       embed
-        .setAuthor({ name: "Added Song to queue" })
-        .setDescription(`[${track.title}](${track.uri})`)
-        .addFields(
-          { name: "Requested By", value: `${track.requester.tag}`, inline: true },
-          { name: "Duration", value: `\`${prettyMs(track.duration, { colonNotation: true })}\``, inline: true },
-          { name: "Position in Queue", value: `${player.queue.size}`, inline: true }
-        );
+        .setAuthor({ name: "Added Track to queue" })
+        .setDescription(`[${track.info.title}](${track.info.uri})`)
+        .setFooter({ text: `Requested By: ${member.user.username}` });
 
-      if (typeof track.displayThumbnail === "function") embed.setThumbnail(track.displayThumbnail("hqdefault"));
-      return { embeds: [embed] };
+      fields.push({
+        name: "Song Duration",
+        value: "`" + prettyMs(track.info.length, { colonNotation: true }) + "`",
+        inline: true,
+      });
 
-    case "PLAYLIST_LOADED":
-      player.queue.add(res.tracks);
-      if (!player.playing && !player.paused && player.queue.totalSize === res.tracks.length) player.play();
-
-      embed
-        .setAuthor({ name: "Added Playlist to queue" })
-        .setDescription(res.playlist.name)
-        .addFields(
-          { name: "Enqueued", value: `${res.tracks.length} songs`, inline: true },
-          { name: "Playlist duration", value: `\`${prettyMs(res.playlist.duration, { colonNotation: true })}\``, inline: true },
-          { name: "Requested By", value: `${res.tracks[0].requester.tag}`, inline: true }
-        );
-
-      return { embeds: [embed] };
+      if (player?.queue?.tracks?.length > 0) {
+        fields.push({
+          name: "Position in Queue",
+          value: (player.queue.tracks.length + 1).toString(),
+          inline: true,
+        });
+      }
+      embed.addFields(fields);
+    }
+  } else {
+    embed
+      .setAuthor({ name: "Added Playlist to queue" })
+      .setDescription(description)
+      .addFields(
+        {
+          name: "Enqueued",
+          value: `${tracks.length} songs`,
+          inline: true,
+        },
+        {
+          name: "Playlist duration",
+          value:
+            "`" +
+            prettyMs(
+              tracks.map((t) => t.info.length).reduce((a, b) => a + b, 0),
+              { colonNotation: true }
+            ) +
+            "`",
+          inline: true,
+        }
+      )
+      .setFooter({ text: `Requested By: ${member.user.username}` });
   }
+
+  // create a player and/or join the member's vc
+  if (!player?.connected) {
+    player = guild.client.musicManager.createPlayer(guild.id);
+    player.queue.data.channel = channel;
+    player.connect(member.voice.channel.id, { deafened: true });
+  }
+
+  // do queue things
+  const started = player.playing || player.paused;
+  player.queue.add(tracks, { requester: member.user.username, next: false });
+  if (!started) {
+    await player.queue.start();
+  }
+
+  return { embeds: [embed] };
 }

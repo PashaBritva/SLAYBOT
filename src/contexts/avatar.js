@@ -1,35 +1,45 @@
-const { BaseContext } = require("@src/structures");
-const { ContextMenuInteraction } = require("discord.js");
-const avatar = require("@commands/information/shared/avatar");
-const { error } = require("@src/helpers/logger")
+const { EmbedBuilder, ApplicationCommandType } = require("discord.js");
+const { EMBED_COLORS } = require("@root/config");
 
-module.exports = class Avatar extends BaseContext {
-  constructor(client) {
-    super(client, {
-      name: "Avatar",
-      description: "Displays avatar information about the user",
-      type: "USER",
-      enabled: true,
-      ephemeral: true,
-    });
-  }
+/**
+ * @type {import('@structures/BaseContext')}
+ */
+module.exports = {
+  name: "avatar",
+  description: "displays avatar information about the user",
+  type: ApplicationCommandType.User,
+  enabled: true,
+  ephemeral: true,
 
-  /**
-   * @param {ContextMenuInteraction} interaction
-   */
   async run(interaction) {
-    try {
-      const user = await interaction.client.users.fetch(interaction.targetId);
-      if (!user) return interaction.followUp({ content: "Couldn't get the user", ephemeral: true });
-
-      const response = avatar(user);
-      
-      await interaction.followUp(response);
-    } catch (err) {
-      error("Error when executing Avatar context menu:", err);
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.followUp({ content: "An error occurred while receiving the avatar", ephemeral: true });
-      }
-    }
-  }
+    const user = await interaction.client.users.fetch(interaction.targetId);
+    const response = getAvatar(user);
+    await interaction.followUp(response);
+  },
 };
+
+function getAvatar(user) {
+  const x64 = user.displayAvatarURL({ extension: "png", size: 64 });
+  const x128 = user.displayAvatarURL({ extension: "png", size: 128 });
+  const x256 = user.displayAvatarURL({ extension: "png", size: 256 });
+  const x512 = user.displayAvatarURL({ extension: "png", size: 512 });
+  const x1024 = user.displayAvatarURL({ extension: "png", size: 1024 });
+  const x2048 = user.displayAvatarURL({ extension: "png", size: 2048 });
+
+  const embed = new EmbedBuilder()
+    .setTitle(`Avatar of ${user.username}`)
+    .setColor(EMBED_COLORS.BOT_EMBED)
+    .setImage(x256)
+    .setDescription(
+      `Links: • [x64](${x64}) ` +
+        `• [x128](${x128}) ` +
+        `• [x256](${x256}) ` +
+        `• [x512](${x512}) ` +
+        `• [x1024](${x1024}) ` +
+        `• [x2048](${x2048}) `
+    );
+
+  return {
+    embeds: [embed],
+  };
+}

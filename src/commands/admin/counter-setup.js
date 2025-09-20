@@ -1,108 +1,102 @@
-const { Message, CommandInteraction } = require("discord.js");
-const { Command } = require("@src/structures");
-const { getMemberStats } = require("@utils/guildUtils");
-const { getSettings } = require("@schemas/Guild");
+const { ApplicationCommandOptionType, ChannelType } = require("discord.js");
 
-module.exports = class CounterSetup extends Command {
-  constructor(client) {
-    super(client, {
-      name: "counter",
-      description: "setup counter channel in the guild",
-      category: "ADMIN",
-      userPermissions: ["MANAGE_GUILD"],
-      botPermissions: ["MANAGE_CHANNELS"],
-      command: {
-        enabled: true,
-        usage: "<type> <channel-name>",
-        minArgsCount: 1,
-      },
-      slashCommand: {
-        enabled: true,
-        ephemeral: true,
-        options: [
+/**
+ * @type {import("@structures/Command")}
+ */
+module.exports = {
+  name: "counter",
+  description: "setup counter channel in the guild",
+  category: "ADMIN",
+  userPermissions: ["ManageGuild"],
+  botPermissions: ["ManageChannels"],
+  command: {
+    enabled: true,
+    usage: "<type> <channel-name>",
+    minArgsCount: 1,
+  },
+  slashCommand: {
+    enabled: true,
+    ephemeral: true,
+    options: [
+      {
+        name: "type",
+        description: "type of counter channel",
+        type: ApplicationCommandOptionType.String,
+        required: true,
+        choices: [
           {
-            name: "type",
-            description: "type of counter channel",
-            type: "STRING",
-            required: true,
-            choices: [
-              {
-                name: "users",
-                value: "USERS",
-              },
-              {
-                name: "members",
-                value: "MEMBERS",
-              },
-              {
-                name: "bots",
-                value: "BOTS",
-              },
-            ],
+            name: "users",
+            value: "USERS",
           },
           {
-            name: "name",
-            description: "name of the counter channel",
-            type: "STRING",
-            required: true,
+            name: "members",
+            value: "MEMBERS",
+          },
+          {
+            name: "bots",
+            value: "BOTS",
           },
         ],
       },
-    });
-  }
+      {
+        name: "name",
+        description: "name of the counter channel",
+        type: ApplicationCommandOptionType.String,
+        required: true,
+      },
+    ],
+  },
 
-  /**
-   * @param {Message} message
-   * @param {string[]} args
-   */
-  async messageRun(message, args) {
+  async messageRun(message, args, data) {
     const type = args[0].toUpperCase();
     if (!type || !["USERS", "MEMBERS", "BOTS"].includes(type)) {
-      return message.reply("Incorrect arguments are passed! Counter types: `users/members/bots`");
+      return message.safeReply("Incorrect arguments are passed! Counter types: `users/members/bots`");
     }
-    if (args.length < 2) return message.reply("Incorrect Usage! You did not provide name");
+    if (args.length < 2) return message.safeReply("Incorrect Usage! You did not provide name");
     args.shift();
     let channelName = args.join(" ");
 
-    const response = await setupCounter(message.guild, type, channelName);
-    return message.reply(response);
-  }
+    const response = await setupCounter(message.guild, type, channelName, data.settings);
+    return message.safeReply(response);
+  },
 
-  /**
-   * @param {CommandInteraction} interaction
-   */
-  async interactionRun(interaction) {
+  async interactionRun(interaction, data) {
     const type = interaction.options.getString("type");
     const name = interaction.options.getString("name");
 
-    const response = await setupCounter(interaction.guild, type.toUpperCase(), name);
+    const response = await setupCounter(interaction.guild, type.toUpperCase(), name, data.settings);
     return interaction.followUp(response);
-  }
+  },
 };
 
-async function setupCounter(guild, type, name) {
+/**
+ * @param {import('discord.js').Guild} guild
+ * @param {string} type
+ * @param {string} name
+ * @param {object} settings
+ */
+async function setupCounter(guild, type, name, settings) {
   let channelName = name;
 
-  const stats = await getMemberStats(guild);
+  const stats = await guild.fetchMemberStats();
   if (type === "USERS") channelName += ` : ${stats[0]}`;
   else if (type === "MEMBERS") channelName += ` : ${stats[2]}`;
   else if (type === "BOTS") channelName += ` : ${stats[1]}`;
 
-  const vc = await guild.channels.create(channelName, {
-    type: "GUILD_VOICE",
+  const vc = await guild.channels.create({
+    name: channelName,
+    type: ChannelType.GuildVoice,
     permissionOverwrites: [
       {
         id: guild.roles.everyone,
-        deny: ["CONNECT"],
+        deny: ["Connect"],
       },
       {
-        id: guild.me.id,
-        allow: ["VIEW_CHANNEL", "MANAGE_CHANNELS", "CONNECT"],
+        id: guild.members.me.id,
+        allow: ["ViewChannel", "ManageChannels", "Connect"],
       },
     ],
   });
-
-  const settings = await getSettings(guild);
 
   const exists = settings.counters.find((v) => v.counter_type.toUpperCase() === type);
   if (exists) {
