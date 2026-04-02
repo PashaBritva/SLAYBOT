@@ -4,6 +4,12 @@ const { getRandomInt } = require("@helpers/Utils");
 const cooldownCache = new Map();
 const voiceStates = new Map();
 
+/**
+ * @param {string} guildId
+ * @param {string} memberId
+ */
+const getVoiceStateKey = (guildId, memberId) => `${guildId}|${memberId}`;
+
 const xpToAdd = () => getRandomInt(19) + 1;
 
 /**
@@ -52,11 +58,15 @@ module.exports = {
 
     // Check if member has levelled up
     let { xp, level } = statsDb;
-    const needed = level * level * 100;
+    let needed = level * level * 100;
 
-    if (xp > needed) {
+    while (xp >= needed) {
       level += 1;
       xp -= needed;
+      needed = level * level * 100;
+    }
+
+    if (level !== statsDb.level) {
 
       statsDb.xp = xp;
       statsDb.level = level;
@@ -104,17 +114,19 @@ module.exports = {
       const statsDb = await getMemberStats(member.guild.id, member.id);
       statsDb.voice.connections += 1;
       await statsDb.save();
-      voiceStates.set(member.id, now);
+      const key = getVoiceStateKey(member.guild.id, member.id);
+      voiceStates.set(key, now);
     }
 
     // Member left a voice channel
     if (oldChannel && !newChannel) {
       const statsDb = await getMemberStats(member.guild.id, member.id);
-      if (voiceStates.has(member.id)) {
-        const time = now - voiceStates.get(member.id);
+      const key = getVoiceStateKey(member.guild.id, member.id);
+      if (voiceStates.has(key)) {
+        const time = now - voiceStates.get(key);
         statsDb.voice.time += time / 1000; // add time in seconds
         await statsDb.save();
-        voiceStates.delete(member.id);
+        voiceStates.delete(key);
       }
     }
   },
