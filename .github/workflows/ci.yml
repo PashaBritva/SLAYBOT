@@ -23,40 +23,10 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint --if-present || npx eslint . --ext .js
+        run: npm run lint
 
       - name: Check formatting
-        run: npx prettier --check "**/*.js" --ignore-unknown
-
-  build:
-    name: 📦 Build Test
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify bot loads without errors
-        env:
-          BOT_TOKEN: dummy_token_for_ci
-          MONGO_CONNECTION: mongodb://localhost:27017/test
-        run: |
-          timeout 10 node -e "
-            require('dotenv').config();
-            require('module-alias/register');
-            console.log('✅ Module aliases resolved');
-            const BotClient = require('@src/structures/BotClient');
-            console.log('✅ BotClient loaded');
-            process.exit(0);
-          " || echo "⚠️ Load test timed out (expected without real token)"
+        run: npm run format:check
 
   security:
     name: 🔒 Security Audit
@@ -74,10 +44,148 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --production || true
+        run: npm audit --production --audit-level=high
 
       - name: Check for exposed secrets
         uses: gitleaks/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
-        continue-on-error: true
+
+  smoke-test:
+    name: 🧪 Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [lint, security]
+    env:
+      BOT_TOKEN: dummy_token_for_ci
+      MONGO_CONNECTION: mongodb://localhost:27017/test_ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate config.js
+        run: node -e "
+          const config = require('./config.js');
+          const required = ['OWNER_IDS', 'CACHE_SIZE', 'DASHBOARD', 'MUSIC', 'EMBED_COLORS', 'PRESENCE', 'INTERACTIONS', 'STATS', 'SUGGESTIONS', 'TICKET', 'ECONOMY', 'IMAGE', 'INVITE', 'AUTOMOD', 'MODERATION', 'GIVEAWAYS', 'MESSAGES', 'PREFIX_COMMANDS', 'SUPPORT_SERVER'];
+          const missing = required.filter(k => !(k in config));
+          if (missing.length > 0) {
+            console.error('Missing config keys:', missing.join(', '));
+            process.exit(1);
+          }
+          console.log('✅ Config valid');
+        "
+
+      - name: Test module aliases
+        run: node -e "
+          require('module-alias/register');
+          console.log('✅ Module aliases resolved');
+        "
+
+      - name: Test structures load
+        run: node -e "
+          require('module-alias/register');
+          const BotClient = require('@src/structures/BotClient');
+          console.log('✅ BotClient structure loaded');
+        "
+
+      - name: Test commands syntax
+        run: node -e "
+          require('module-alias/register');
+          const { recursiveReadDirSync } = require('@helpers/Utils');
+          const files = recursiveReadDirSync('src/commands');
+          let errors = 0;
+          for (const file of files) {
+            try {
+              delete require.cache[require.resolve(file)];
+              require(file);
+            } catch (ex) {
+              console.error('Failed:', file, ex.message);
+              errors++;
+            }
+          }
+          if (errors > 0) process.exit(1);
+          console.log('✅ All commands syntax valid (' + files.length + ' files)');
+        "
+
+      - name: Test events syntax
+        run: node -e "
+          require('module-alias/register');
+          const { recursiveReadDirSync } = require('@helpers/Utils');
+          const files = recursiveReadDirSync('src/events');
+          let errors = 0;
+          for (const file of files) {
+            try {
+              delete require.cache[require.resolve(file)];
+              require(file);
+            } catch (ex) {
+              console.error('Failed:', file, ex.message);
+              errors++;
+            }
+          }
+          if (errors > 0) process.exit(1);
+          console.log('✅ All events syntax valid (' + files.length + ' files)');
+        "
+
+      - name: Test handlers syntax
+        run: node -e "
+          require('module-alias/register');
+          const { recursiveReadDirSync } = require('@helpers/Utils');
+          const files = recursiveReadDirSync('src/handlers');
+          let errors = 0;
+          for (const file of files) {
+            try {
+              delete require.cache[require.resolve(file)];
+              require(file);
+            } catch (ex) {
+              console.error('Failed:', file, ex.message);
+              errors++;
+            }
+          }
+          if (errors > 0) process.exit(1);
+          console.log('✅ All handlers syntax valid (' + files.length + ' files)');
+        "
+
+      - name: Test database schemas syntax
+        run: node -e "
+          require('module-alias/register');
+          const { recursiveReadDirSync } = require('@helpers/Utils');
+          const files = recursiveReadDirSync('src/database/schemas');
+          let errors = 0;
+          for (const file of files) {
+            try {
+              delete require.cache[require.resolve(file)];
+              require(file);
+            } catch (ex) {
+              console.error('Failed:', file, ex.message);
+              errors++;
+            }
+          }
+          if (errors > 0) process.exit(1);
+          console.log('✅ All schemas syntax valid (' + files.length + ' files)');
+        "
+
+      - name: Test helpers syntax
+        run: node -e "
+          require('module-alias/register');
+          const { recursiveReadDirSync } = require('@helpers/Utils');
+          const files = recursiveReadDirSync('src/helpers');
+          let errors = 0;
+          for (const file of files) {
+            try {
+              delete require.cache[require.resolve(file)];
+              require(file);
+            } catch (ex) {
+              console.error('Failed:', file, ex.message);
+              errors++;
+            }
+          }
+          if (errors > 0) process.exit(1);
+          console.log('✅ All helpers syntax valid (' + files.length + ' files)');
+        "
