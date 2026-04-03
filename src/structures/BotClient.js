@@ -80,8 +80,13 @@ module.exports = class BotClient extends Client {
    */
   initMusicManager() {
     if (this.config.MUSIC.ENABLED && !this.musicManager) {
-      this.musicManager = lavaclient(this);
-      this.logger.log("Music manager initialized");
+      try {
+        this.musicManager = lavaclient(this);
+        this.logger.success("Music manager initialized");
+      } catch (ex) {
+        this.logger.error("Failed to initialize music manager", ex);
+        this.config.MUSIC.ENABLED = false;
+      }
     }
   }
 
