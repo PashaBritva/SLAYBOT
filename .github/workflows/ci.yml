@@ -65,7 +65,7 @@ jobs:
         run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/commands');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All commands valid ('+files.length+' files)');"
 
       - name: Test events syntax
-        run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/events');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All events valid ('+files.length+' files)');"
+        run: NODE_NO_WARNINGS=1 node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/events');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All events valid ('+files.length+' files)');"
 
       - name: Test handlers syntax
         run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/handlers');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All handlers valid ('+files.length+' files)');"
