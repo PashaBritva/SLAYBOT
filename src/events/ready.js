@@ -8,6 +8,11 @@ const { getSettings } = require("@schemas/Guild");
 module.exports = async (client) => {
   client.logger.success(`Logged in as ${client.user.tag}! (${client.user.id})`);
 
+  // Update Bot Presence (before music init to ensure it runs even if music crashes)
+  if (client.config.PRESENCE.ENABLED) {
+    presenceHandler(client);
+  }
+
   // Initialize Music Manager
   client.initMusicManager();
 
@@ -15,11 +20,6 @@ module.exports = async (client) => {
   if (client.config.GIVEAWAYS.ENABLED) {
     client.logger.log("Initializing giveaways manager...");
     client.giveawaysManager._init().then((_) => client.logger.success("Giveaway Manager initialized"));
-  }
-
-  // Update Bot Presence
-  if (client.config.PRESENCE.ENABLED) {
-    presenceHandler(client);
   }
 
   // Register Interactions
