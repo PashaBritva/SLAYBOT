@@ -6,6 +6,9 @@ config.js
 .vscode
 docker-compose.yml
 
+# Dashboard (not maintained yet)
+dashboard/
+
 # Build artifacts
 dist/
 build/
