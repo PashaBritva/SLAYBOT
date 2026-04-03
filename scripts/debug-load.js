@@ -10,13 +10,7 @@ require("module-alias/register");
 
 const { recursiveReadDirSync } = require("@helpers/Utils");
 
-const dirs = [
-  "src/database/schemas",
-  "src/helpers",
-  "src/events",
-  "src/handlers",
-  "src/commands",
-];
+const dirs = ["src/database/schemas", "src/helpers", "src/events", "src/handlers", "src/commands"];
 
 let total = 0;
 let passed = 0;
