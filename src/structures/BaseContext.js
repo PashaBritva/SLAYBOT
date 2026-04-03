@@ -20,7 +20,7 @@ module.exports = {
   type: "",
   enabled: false,
   ephemeral: false,
-  options: true,
   userPermissions: [],
   cooldown: 0,
+  run: (interaction) => {},
 };

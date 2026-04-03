@@ -57,7 +57,7 @@ module.exports = {
       reason,
       admin: {
         id: admin.id,
-        tag: admin.user.tag,
+        tag: admin.user.username,
       },
       type,
     }).save(),

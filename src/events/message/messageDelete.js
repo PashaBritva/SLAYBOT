@@ -10,7 +10,7 @@ module.exports = async (client, message) => {
   if (message.author.bot || !message.guild) return;
 
   const settings = await getSettings(message.guild);
-  if (!settings.automod.anti_ghostping || !settings.modlog_channel) return;
+  if (!settings.automod?.anti_ghostping || !settings.modlog_channel) return;
   const { members, roles, everyone } = message.mentions;
 
   // Check message if it contains mentions
@@ -22,7 +22,7 @@ module.exports = async (client, message) => {
       .setAuthor({ name: "Ghost ping detected" })
       .setDescription(
         `**Message:**\n${message.content}\n\n` +
-          `**Author:** ${message.author.tag} \`${message.author.id}\`\n` +
+          `**Author:** ${message.author.globalName || message.author.username} \`${message.author.id}\`\n` +
           `**Channel:** ${message.channel.toString()}`
       )
       .addFields(

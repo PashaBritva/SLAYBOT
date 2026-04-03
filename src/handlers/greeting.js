@@ -18,7 +18,7 @@ const parse = async (content, member, inviterData = {}) => {
       try {
         const inviter = await member.client.users.fetch(inviterId);
         inviteData.name = inviter.username;
-        inviteData.tag = inviter.tag;
+        inviteData.tag = inviter.globalName || inviter.username;
       } catch (ex) {
         member.client.logger.error(`Parsing inviterId: ${inviterId}`, ex);
         inviteData.name = "NA";
@@ -38,8 +38,8 @@ const parse = async (content, member, inviterData = {}) => {
     .replaceAll(/{count}/g, member.guild.memberCount)
     .replaceAll(/{member:nick}/g, member.displayName)
     .replaceAll(/{member:name}/g, member.user.username)
-    .replaceAll(/{member:dis}/g, member.user.discriminator)
-    .replaceAll(/{member:tag}/g, member.user.tag)
+    .replaceAll(/{member:dis}/g, member.user.discriminator || "0")
+    .replaceAll(/{member:tag}/g, member.user.globalName || member.user.username)
     .replaceAll(/{member:mention}/g, member.toString())
     .replaceAll(/{member:avatar}/g, member.displayAvatarURL())
     .replaceAll(/{inviter:name}/g, inviteData.name)

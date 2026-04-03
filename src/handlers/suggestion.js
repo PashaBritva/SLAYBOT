@@ -77,6 +77,8 @@ async function approveSuggestion(member, channel, messageId, reason) {
     return "Suggestion message not found";
   }
 
+  if (!message.embeds[0]) return "Suggestion embed not found";
+
   let buttonsRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("SUGGEST_APPROVE")
@@ -167,6 +169,8 @@ async function rejectSuggestion(member, channel, messageId, reason) {
   } catch (err) {
     return "Suggestion message not found";
   }
+
+  if (!message.embeds[0]) return "Suggestion embed not found";
 
   let buttonsRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("SUGGEST_APPROVE").setLabel("Approve").setStyle(ButtonStyle.Success),

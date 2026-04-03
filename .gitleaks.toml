@@ -1,0 +1,11 @@
+title = "Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore false positives"
+paths = [
+    '''.env.example''',
+    '''node_modules''',
+]

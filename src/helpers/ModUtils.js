@@ -51,6 +51,10 @@ const logModeration = async (issuer, target, reason, type, data = {}) => {
       );
       break;
 
+    case "WARN":
+      embed.setColor(MODERATION.EMBED_COLORS.WARN || "#FEE75C");
+      break;
+
     case "TIMEOUT":
       embed.setColor(MODERATION.EMBED_COLORS.TIMEOUT);
       break;
@@ -106,7 +110,7 @@ const logModeration = async (issuer, target, reason, type, data = {}) => {
     if (target instanceof GuildMember) {
       fields.push({ name: "Member", value: `${target.displayName} [${target.id}]`, inline: false });
     } else {
-      fields.push({ name: "User", value: `${target.tag} [${target.id}]`, inline: false });
+      fields.push({ name: "User", value: `${target.globalName || target.username} [${target.id}]`, inline: false });
     }
 
     fields.push({ name: "Reason", value: reason || "No reason provided", inline: false });
@@ -364,7 +368,7 @@ module.exports = class ModUtils {
     if (!memberInteract(issuer.guild.members.me, target)) return "BOT_PERM";
 
     try {
-      await target.ban({ deleteMessageDays: 7, reason });
+      await target.ban({ deleteMessageSeconds: 7 * 24 * 60 * 60, reason });
       await issuer.guild.members.unban(target.user);
       logModeration(issuer, target, reason, "Softban");
       return true;
@@ -387,7 +391,7 @@ module.exports = class ModUtils {
     if (targetMem && !memberInteract(issuer.guild.members.me, targetMem)) return "BOT_PERM";
 
     try {
-      await issuer.guild.bans.create(target.id, { days: 0, reason });
+      await issuer.guild.bans.create(target.id, { deleteMessageSeconds: 0, reason });
       logModeration(issuer, target, reason, "Ban");
       return true;
     } catch (ex) {
@@ -451,7 +455,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setMute(false, reason);
-      logModeration(issuer, target, reason, "Vmute");
+      logModeration(issuer, target, reason, "Vunmute");
       return true;
     } catch (ex) {
       error(`vUnmuteTarget`, ex);
@@ -478,7 +482,7 @@ module.exports = class ModUtils {
       return true;
     } catch (ex) {
       error(`deafenTarget`, ex);
-      return `Failed to deafen ${target.user.tag}`;
+      return "ERROR";
     }
   }
 
@@ -522,7 +526,7 @@ module.exports = class ModUtils {
       logModeration(issuer, target, reason, "Disconnect");
       return true;
     } catch (ex) {
-      error(`unDeafenTarget`, ex);
+      error(`disconnectTarget`, ex);
       return "ERROR";
     }
   }

@@ -9,6 +9,7 @@ const Schema = new mongoose.Schema(
     _id: String,
     username: String,
     discriminator: String,
+    global_name: String,
     logged: Boolean,
     coins: { type: Number, default: 0 },
     bank: { type: Number, default: 0 },
@@ -48,7 +49,8 @@ module.exports = {
       userDb = new Model({
         _id: user.id,
         username: user.username,
-        discriminator: user.discriminator,
+        discriminator: user.discriminator || "0",
+        global_name: user.globalName,
       });
     }
 
@@ -56,7 +58,8 @@ module.exports = {
     // Update username and discriminator in previous DB
     else if (!userDb.username || !userDb.discriminator) {
       userDb.username = user.username;
-      userDb.discriminator = user.discriminator;
+      userDb.discriminator = user.discriminator || "0";
+      userDb.global_name = user.globalName;
     }
 
     cache.add(user.id, userDb);

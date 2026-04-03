@@ -122,7 +122,7 @@ Guild.prototype.resolveMember = async function (query, exact = false) {
   await this.members.fetch({ query }).catch(() => {});
 
   // Check if exact tag is matched
-  const matchingTags = this.members.cache.filter((mem) => mem.user.tag === query);
+  const matchingTags = this.members.cache.filter((mem) => mem.user.username === query);
   if (matchingTags.size === 1) return matchingTags.first();
 
   // Check for matching username

@@ -20,9 +20,9 @@ module.exports = async (client, oldState, newState) => {
     if (oldState.channel.members.size === 1) {
       setTimeout(() => {
         // if 1 (you), wait 1 minute
-        if (!oldState.channel.members.size - 1) {
+        if (oldState.channel.members.size === 1) {
           const player = client.musicManager.getPlayer(guild.id);
-          if (player) client.musicManager.destroyPlayer(guild.id).then(player.disconnect()); // destroy the player
+          if (player) client.musicManager.destroyPlayer(guild.id).then(() => player.disconnect()); // destroy the player
         }
       }, client.config.MUSIC.IDLE_TIME * 1000);
     }

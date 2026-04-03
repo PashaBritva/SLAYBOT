@@ -25,7 +25,7 @@ const parse = (content, member, level) => {
     .replaceAll(/{member:id}/g, member.id)
     .replaceAll(/{member:name}/g, member.displayName)
     .replaceAll(/{member:mention}/g, member.toString())
-    .replaceAll(/{member:tag}/g, member.user.tag)
+    .replaceAll(/{member:tag}/g, member.user.globalName || member.user.username)
     .replaceAll(/{level}/g, level);
 };
 

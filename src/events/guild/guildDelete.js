@@ -19,7 +19,7 @@ module.exports = async (client, guild) => {
   const ownerId = guild.ownerId || settings.data.owner;
   try {
     const owner = await client.users.fetch(ownerId);
-    ownerTag = owner.tag;
+    ownerTag = owner.globalName || owner.username;
   } catch (err) {
     ownerTag = "Deleted User";
   }

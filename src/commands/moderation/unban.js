@@ -70,7 +70,7 @@ async function getMatchingBans(guild, match) {
     if (ban.user.partial) await ban.user.fetch();
 
     // exact match
-    if (ban.user.id === match || ban.user.tag === match) {
+    if (ban.user.id === match || ban.user.username === match || (ban.user.globalName && ban.user.globalName === match)) {
       matched.push(ban.user);
       break;
     }
@@ -85,7 +85,7 @@ async function getMatchingBans(guild, match) {
 
   const options = [];
   for (const user of matched) {
-    options.push({ label: user.tag, value: user.id });
+    options.push({ label: user.globalName || user.username, value: user.id });
   }
 
   const menuRow = new ActionRowBuilder().addComponents(

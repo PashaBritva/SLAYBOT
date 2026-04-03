@@ -48,6 +48,8 @@ const Schema = new mongoose.Schema({
     anti_ghostping: Boolean,
     anti_massmention: Number,
     max_lines: Number,
+    max_mentions: { type: Number, default: 5 },
+    max_role_mentions: { type: Number, default: 3 },
   },
   invite: {
     tracking: Boolean,

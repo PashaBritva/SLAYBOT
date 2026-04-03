@@ -46,7 +46,7 @@ module.exports = async (client, guild) => {
       },
       {
         name: "Owner",
-        value: `${client.users.cache.get(guild.ownerId)?.tag || "Неизвестен"} [\`${guild.ownerId}\`]`,
+        value: `${client.users.cache.get(guild.ownerId)?.globalName || client.users.cache.get(guild.ownerId)?.username || "Неизвестен"} [\`${guild.ownerId}\`]`,
         inline: false,
       },
       {

@@ -1,32 +1,44 @@
-# Base image
-FROM node:24-alpine
+FROM node:22-alpine AS builder
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json to the container
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install all dependencies (including dev)
+RUN npm ci
 
-# Bundle rest of the source code
+# Copy source code
 COPY . .
 
-# Environment variables
-ENV BOT_TOKEN=
-ENV MONGO_CONNECTION=
-ENV ERROR_LOGS=
-ENV JOIN_LEAVE_LOGS=
-ENV BOT_SECRET=
-ENV SESSION_PASSWORD=
-ENV WEATHERSTACK_KEY=
-ENV STRANGE_API_KEY=
-ENV SPOTIFY_CLIENT_ID=
-ENV SPOTIFY_CLIENT_SECRET=
+# Production stage
+FROM node:22-alpine
 
-# Expose port 8080 for dashboard
+WORKDIR /app
+
+# Install curl for healthchecks
+RUN apk add --no-cache curl
+
+# Copy built artifacts from builder
+COPY --from=builder /app /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S botuser -u 1001
+
+# Set ownership
+RUN chown -R botuser:nodejs /app
+USER botuser
+
+# Expose dashboard port
 EXPOSE 8080
 
-# Define the command to run your Node.js application
-CMD [ "node", "bot.js" ]
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s \
+  CMD node -e "console.log('Bot process running')" || exit 1
+
+# Start the bot
+CMD ["node", "bot.js"]

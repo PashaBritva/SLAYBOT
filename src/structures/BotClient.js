@@ -8,13 +8,13 @@ const {
 } = require("discord.js");
 const path = require("path");
 const { table } = require("table");
-const Logger = require("../helpers/Logger");
-const { recursiveReadDirSync } = require("../helpers/Utils");
-const { validateCommand, validateContext } = require("../helpers/Validator");
+const Logger = require("@helpers/Logger");
+const { recursiveReadDirSync } = require("@helpers/Utils");
+const { validateCommand, validateContext } = require("@helpers/Validator");
 const { schemas } = require("@src/database/mongoose");
 const CommandCategory = require("./CommandCategory");
-const lavaclient = require("../handlers/lavaclient");
-const giveawaysHandler = require("../handlers/giveaway");
+const lavaclient = require("@handlers/lavaclient");
+const giveawaysHandler = require("@handlers/giveaway");
 const { DiscordTogether } = require("discord-together");
 
 module.exports = class BotClient extends Client {
@@ -203,7 +203,10 @@ module.exports = class BotClient extends Client {
         const ctx = require(file);
         if (typeof ctx !== "object") continue;
         validateContext(ctx);
-        if (!ctx.enabled) return this.logger.debug(`Skipping context ${ctx.name}. Disabled!`);
+        if (!ctx.enabled) {
+          this.logger.debug(`Skipping context ${ctx.name}. Disabled!`);
+          continue;
+        }
         if (this.contextMenus.has(ctx.name)) throw new Error(`Context already exists with that name`);
         this.contextMenus.set(ctx.name, ctx);
       } catch (ex) {
@@ -293,7 +296,7 @@ module.exports = class BotClient extends Client {
     }
 
     // check if exact tag is matched in cache
-    const matchingTags = this.users.cache.filter((user) => user.tag === search);
+    const matchingTags = this.users.cache.filter((user) => user.username === search);
     if (exact && matchingTags.size === 1) users.push(matchingTags.first());
     else matchingTags.forEach((match) => users.push(match));
 
@@ -304,7 +307,7 @@ module.exports = class BotClient extends Client {
           (x) =>
             x.username === search ||
             x.username.toLowerCase().includes(search.toLowerCase()) ||
-            x.tag.toLowerCase().includes(search.toLowerCase())
+            x.tag?.toLowerCase().includes(search.toLowerCase())
         )
         .forEach((user) => users.push(user));
     }
