@@ -36,5 +36,8 @@ process.on("unhandledRejection", (err) => client.logger.error(`Unhandled excepti
   }
 
   await client.login(process.env.BOT_TOKEN);
+
+  // Initialize music manager after login (requires client.user.id)
+  client.initMusicManager();
 })();
 // deploy final test Fri Apr  3 17:41:35 MSK 2026

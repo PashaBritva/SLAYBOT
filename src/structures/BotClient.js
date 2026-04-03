@@ -62,9 +62,6 @@ module.exports = class BotClient extends Client {
       ? new WebhookClient({ url: process.env.JOIN_LEAVE_LOGS })
       : undefined;
 
-    // Music Player
-    if (this.config.MUSIC.ENABLED) this.musicManager = lavaclient(this);
-
     // Giveaways
     if (this.config.GIVEAWAYS.ENABLED) this.giveawaysManager = giveawaysHandler(this);
 
@@ -76,6 +73,16 @@ module.exports = class BotClient extends Client {
 
     // Discord Together
     this.discordTogether = new DiscordTogether(this);
+  }
+
+  /**
+   * Initialize music manager after client login (requires client.user.id)
+   */
+  initMusicManager() {
+    if (this.config.MUSIC.ENABLED && !this.musicManager) {
+      this.musicManager = lavaclient(this);
+      this.logger.log("Music manager initialized");
+    }
   }
 
   /**

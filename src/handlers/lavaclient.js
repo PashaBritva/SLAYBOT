@@ -20,6 +20,7 @@ module.exports = (client) => {
   const lavaclient = new Cluster({
     nodes: client.config.MUSIC.LAVALINK_NODES,
     sendGatewayPayload: (id, payload) => client.guilds.cache.get(id)?.shard?.send(payload),
+    userId: client.user.id,
   });
 
   client.ws.on("VOICE_SERVER_UPDATE", (data) => lavaclient.handleVoiceUpdate(data));
