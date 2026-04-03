@@ -54,24 +54,23 @@ jobs:
           cache: "npm"
       - name: Install dependencies
         run: npm ci
-
-      - name: Validate config.js
-        run: node -e "const c=require('./config.js');const r=['OWNER_IDS','CACHE_SIZE','DASHBOARD','MUSIC','EMBED_COLORS','PRESENCE','INTERACTIONS','STATS','SUGGESTIONS','TICKET','ECONOMY','IMAGE','INVITE','AUTOMOD','MODERATION','GIVEAWAYS','MESSAGES','PREFIX_COMMANDS','SUPPORT_SERVER'];const m=r.filter(k=>!(k in c));if(m.length){console.error('Missing:',m.join(', '));process.exit(1)};console.log('✅ Config valid');"
-
-      - name: Test module aliases
-        run: node -e "require('module-alias/register');console.log('✅ Module aliases resolved');"
-
-      - name: Test commands syntax
-        run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/commands');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All commands valid ('+files.length+' files)');"
-
-      - name: Test events syntax
-        run: NODE_NO_WARNINGS=1 node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/events');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All events valid ('+files.length+' files)');"
-
-      - name: Test handlers syntax
-        run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/handlers');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All handlers valid ('+files.length+' files)');"
-
-      - name: Test database schemas
-        run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/database/schemas');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All schemas valid ('+files.length+' files)');"
-
-      - name: Test helpers syntax
-        run: node -e "require('module-alias/register');const{recursiveReadDirSync}=require('@helpers/Utils');const files=recursiveReadDirSync('src/helpers');let e=0;for(const f of files){try{delete require.cache[require.resolve(f)];require(f)}catch(ex){console.error('Failed:',f,ex.message);e++}};if(e>0)process.exit(1);console.log('✅ All helpers valid ('+files.length+' files)');"
+      - name: Run all checks
+        run: |
+          node -e "const c=require('./config.js');const r=['OWNER_IDS','CACHE_SIZE','DASHBOARD','MUSIC','EMBED_COLORS','PRESENCE','INTERACTIONS','STATS','SUGGESTIONS','TICKET','ECONOMY','IMAGE','INVITE','AUTOMOD','MODERATION','GIVEAWAYS','MESSAGES','PREFIX_COMMANDS','SUPPORT_SERVER'];const m=r.filter(k=>!(k in c));if(m.length){console.error('Missing:',m.join(', '));process.exit(1)};console.log('✅ Config valid');"
+          node -e "require('module-alias/register');console.log('✅ Module aliases resolved');"
+          node -e "
+            require('module-alias/register');
+            const {recursiveReadDirSync} = require('@helpers/Utils');
+            const dirs = ['src/commands','src/events','src/handlers','src/database/schemas','src/helpers'];
+            let total=0, errors=0;
+            for (const dir of dirs) {
+              const files = recursiveReadDirSync(dir);
+              for (const f of files) {
+                try { delete require.cache[require.resolve(f)]; require(f); }
+                catch (ex) { console.error('Failed:', f, ex.message); errors++; }
+              }
+              total += files.length;
+            }
+            if (errors > 0) process.exit(1);
+            console.log('✅ All ' + total + ' files valid');
+          "
