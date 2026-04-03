@@ -54,24 +54,105 @@ jobs:
           cache: "npm"
       - name: Install dependencies
         run: npm ci
-      - name: Run all checks
+      - name: Validate config
         run: |
           node -e "const c=require('./config.js');const r=['OWNER_IDS','CACHE_SIZE','DASHBOARD','MUSIC','EMBED_COLORS','PRESENCE','INTERACTIONS','STATS','SUGGESTIONS','TICKET','ECONOMY','IMAGE','INVITE','AUTOMOD','MODERATION','GIVEAWAYS','MESSAGES','PREFIX_COMMANDS','SUPPORT_SERVER'];const m=r.filter(k=>!(k in c));if(m.length){console.error('Missing:',m.join(', '));process.exit(1)};console.log('✅ Config valid');"
-          node -e "require('module-alias/register');console.log('✅ Module aliases resolved');"
+      - name: Check module aliases
+        run: node -e "require('module-alias/register');console.log('✅ Module aliases resolved');"
+      - name: Load schemas
+        timeout-minutes: 1
+        run: |
           node -e "
             require('module-alias/register');
             const {recursiveReadDirSync} = require('@helpers/Utils');
-            const dirs = ['src/commands','src/events','src/handlers','src/database/schemas','src/helpers'];
-            let total=0, errors=0;
-            for (const dir of dirs) {
-              const files = recursiveReadDirSync(dir);
-              for (const f of files) {
-                try { delete require.cache[require.resolve(f)]; require(f); }
-                catch (ex) { console.error('Failed:', f, ex.message); errors++; }
-              }
-              total += files.length;
+            const files = recursiveReadDirSync('src/database/schemas');
+            let errors = 0;
+            for (const f of files) {
+              try { require(f); }
+              catch (ex) { console.error('Failed:', f, ex.message); errors++; }
             }
             if (errors > 0) process.exit(1);
-            console.log('✅ All ' + total + ' files valid');
+            console.log('✅ Schemas (' + files.length + ') loaded');
             process.exit(0);
           "
+      - name: Load helpers
+        timeout-minutes: 1
+        run: |
+          node -e "
+            require('module-alias/register');
+            const {recursiveReadDirSync} = require('@helpers/Utils');
+            const files = recursiveReadDirSync('src/helpers');
+            let errors = 0;
+            for (const f of files) {
+              try { require(f); }
+              catch (ex) { console.error('Failed:', f, ex.message); errors++; }
+            }
+            if (errors > 0) process.exit(1);
+            console.log('✅ Helpers (' + files.length + ') loaded');
+            process.exit(0);
+          "
+      - name: Load events
+        timeout-minutes: 1
+        run: |
+          node -e "
+            require('module-alias/register');
+            const {recursiveReadDirSync} = require('@helpers/Utils');
+            const files = recursiveReadDirSync('src/events');
+            let errors = 0;
+            for (const f of files) {
+              try { require(f); }
+              catch (ex) { console.error('Failed:', f, ex.message); errors++; }
+            }
+            if (errors > 0) process.exit(1);
+            console.log('✅ Events (' + files.length + ') loaded');
+            process.exit(0);
+          "
+      - name: Load handlers
+        timeout-minutes: 1
+        run: |
+          node -e "
+            require('module-alias/register');
+            const {recursiveReadDirSync} = require('@helpers/Utils');
+            const files = recursiveReadDirSync('src/handlers');
+            let errors = 0;
+            for (const f of files) {
+              try { require(f); }
+              catch (ex) { console.error('Failed:', f, ex.message); errors++; }
+            }
+            if (errors > 0) process.exit(1);
+            console.log('✅ Handlers (' + files.length + ') loaded');
+            process.exit(0);
+          "
+      - name: Load commands
+        timeout-minutes: 2
+        run: |
+          node -e "
+            require('module-alias/register');
+            const {recursiveReadDirSync} = require('@helpers/Utils');
+            const files = recursiveReadDirSync('src/commands');
+            let errors = 0;
+            for (const f of files) {
+              try { require(f); }
+              catch (ex) { console.error('Failed:', f, ex.message); errors++; }
+            }
+            if (errors > 0) process.exit(1);
+            console.log('✅ Commands (' + files.length + ') loaded');
+            process.exit(0);
+          "
+
+  debug-test:
+    name: 🔬 Debug Load (develop only)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Load all with full stack traces
+        timeout-minutes: 3
+        run: npm run debug:load
