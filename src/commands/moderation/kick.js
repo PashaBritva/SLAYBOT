@@ -1,4 +1,4 @@
-const { kickTarget } = require("@helpers/ModUtils");
+const { kickTarget, getPunishmentInfo } = require("@helpers/ModUtils");
 const { ApplicationCommandOptionType } = require("discord.js");
 
 /**
@@ -53,8 +53,19 @@ module.exports = {
 
 async function kick(issuer, target, reason) {
   const response = await kickTarget(issuer, target, reason);
-  if (typeof response === "boolean") return `${target.user.username} is kicked!`;
-  if (response === "BOT_PERM") return `I do not have permission to kick ${target.user.username}`;
-  else if (response === "MEMBER_PERM") return `You do not have permission to kick ${target.user.username}`;
-  else return `Failed to kick ${target.user.username}`;
+  if (typeof response !== "boolean") {
+    if (response === "BOT_PERM") return `I do not have permission to kick ${target.user.username}`;
+    if (response === "MEMBER_PERM") return `You do not have permission to kick ${target.user.username}`;
+    return `Failed to kick ${target.user.username}`;
+  }
+
+  const info = await getPunishmentInfo(issuer.guild, target);
+  let msg = `${target.user.username} is kicked!`;
+  msg += `\n📊 Предупреждений было: **${info.warnings}/${info.maxWarn}**`;
+
+  if (info.warnings > 0) {
+    msg += `\n📋 Предупреждения сброшены при кике.`;
+  }
+
+  return msg;
 }

@@ -1,4 +1,4 @@
-const { banTarget } = require("@helpers/ModUtils");
+const { banTarget, getPunishmentInfo } = require("@helpers/ModUtils");
 const { ApplicationCommandOptionType } = require("discord.js");
 
 /**
@@ -58,8 +58,19 @@ module.exports = {
  */
 async function ban(issuer, target, reason) {
   const response = await banTarget(issuer, target, reason);
-  if (typeof response === "boolean") return `${target.username} is banned!`;
-  if (response === "BOT_PERM") return `I do not have permission to ban ${target.username}`;
-  else if (response === "MEMBER_PERM") return `You do not have permission to ban ${target.username}`;
-  else return `Failed to ban ${target.username}`;
+  if (typeof response !== "boolean") {
+    if (response === "BOT_PERM") return `I do not have permission to ban ${target.username}`;
+    if (response === "MEMBER_PERM") return `You do not have permission to ban ${target.username}`;
+    return `Failed to ban ${target.username}`;
+  }
+
+  const info = await getPunishmentInfo(issuer.guild, target);
+  let msg = `${target.username} is banned!`;
+  msg += `\n📊 Предупреждений было: **${info.warnings}/${info.maxWarn}**`;
+
+  if (info.warnings > 0) {
+    msg += `\n📋 Предупреждения сброшены при бане.`;
+  }
+
+  return msg;
 }

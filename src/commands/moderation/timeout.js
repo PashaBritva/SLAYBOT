@@ -1,4 +1,4 @@
-const { timeoutTarget } = require("@helpers/ModUtils");
+const { timeoutTarget, getPunishmentInfo } = require("@helpers/ModUtils");
 const { ApplicationCommandOptionType } = require("discord.js");
 const ems = require("enhanced-ms");
 
@@ -45,7 +45,6 @@ module.exports = {
     const target = await message.guild.resolveMember(args[0], true);
     if (!target) return message.safeReply(`No user found matching ${args[0]}`);
 
-    // parse time
     const ms = ems(args[1]);
     if (!ms) return message.safeReply("Please provide a valid duration. Example: 1d/1h/1m/1s");
 
@@ -57,7 +56,6 @@ module.exports = {
   async interactionRun(interaction) {
     const user = interaction.options.getUser("user");
 
-    // parse time
     const duration = interaction.options.getString("duration");
     const ms = ems(duration);
     if (!ms) return interaction.followUp("Please provide a valid duration. Example: 1d/1h/1m/1s");
@@ -73,9 +71,20 @@ module.exports = {
 async function timeout(issuer, target, ms, reason) {
   if (isNaN(ms)) return "Please provide a valid duration. Example: 1d/1h/1m/1s";
   const response = await timeoutTarget(issuer, target, ms, reason);
-  if (typeof response === "boolean") return `${target.user.username} is timed out!`;
-  if (response === "BOT_PERM") return `I do not have permission to timeout ${target.user.username}`;
-  else if (response === "MEMBER_PERM") return `You do not have permission to timeout ${target.user.username}`;
-  else if (response === "ALREADY_TIMEOUT") return `${target.user.username} is already timed out!`;
-  else return `Failed to timeout ${target.user.username}`;
+  if (typeof response !== "boolean") {
+    if (response === "BOT_PERM") return `I do not have permission to timeout ${target.user.username}`;
+    if (response === "MEMBER_PERM") return `You do not have permission to timeout ${target.user.username}`;
+    if (response === "ALREADY_TIMEOUT") return `${target.user.username} is already timed out!`;
+    return `Failed to timeout ${target.user.username}`;
+  }
+
+  const info = await getPunishmentInfo(issuer.guild, target);
+  let msg = `${target.user.username} is timed out!`;
+  msg += `\n📊 Предупреждений: **${info.warnings}/${info.maxWarn}**`;
+
+  if (info.isLastWarning) {
+    msg += `\n⚠️ **Это последнее предупреждение!** Следующее → ${info.nextAction}`;
+  }
+
+  return msg;
 }

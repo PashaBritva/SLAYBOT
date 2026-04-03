@@ -134,6 +134,34 @@ const logModeration = async (issuer, target, reason, type, data = {}) => {
 
 module.exports = class ModUtils {
   /**
+   * Get punishment history and warning info for a member
+   * @param {import('discord.js').Guild} guild
+   * @param {import('discord.js').GuildMember|import('discord.js').User} target
+   */
+  static async getPunishmentInfo(guild, target) {
+    const memberDb = await getMember(guild.id, target.id);
+    const settings = await getSettings(guild);
+    const warningsLeft = settings.max_warn.limit - memberDb.warnings;
+    const hasActiveTimeout = target instanceof GuildMember && target.communicationDisabledUntilTimestamp > Date.now();
+
+    let nextAction = null;
+    if (warningsLeft <= 1) {
+      const actionMap = { TIMEOUT: "таймаут", KICK: "кик", BAN: "бан" };
+      nextAction = actionMap[settings.max_warn.action] || settings.max_warn.action;
+    }
+
+    return {
+      warnings: memberDb.warnings,
+      maxWarn: settings.max_warn.limit,
+      warningsLeft,
+      hasActiveTimeout,
+      nextAction,
+      isLastWarning: warningsLeft === 1,
+      isOverLimit: warningsLeft <= 0,
+    };
+  }
+
+  /**
    * @param {import('discord.js').GuildMember} issuer
    * @param {import('discord.js').GuildMember} target
    */

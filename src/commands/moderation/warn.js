@@ -1,4 +1,4 @@
-const { warnTarget } = require("@helpers/ModUtils");
+const { warnTarget, getPunishmentInfo } = require("@helpers/ModUtils");
 const { ApplicationCommandOptionType } = require("discord.js");
 
 /**
@@ -52,8 +52,22 @@ module.exports = {
 
 async function warn(issuer, target, reason) {
   const response = await warnTarget(issuer, target, reason);
-  if (typeof response === "boolean") return `${target.user.username} is warned!`;
-  if (response === "BOT_PERM") return `I do not have permission to warn ${target.user.username}`;
-  else if (response === "MEMBER_PERM") return `You do not have permission to warn ${target.user.username}`;
-  else return `Failed to warn ${target.user.username}`;
+  if (typeof response !== "boolean") {
+    if (response === "BOT_PERM") return `I do not have permission to warn ${target.user.username}`;
+    if (response === "MEMBER_PERM") return `You do not have permission to warn ${target.user.username}`;
+    return `Failed to warn ${target.user.username}`;
+  }
+
+  // Build success message with punishment info
+  const info = await getPunishmentInfo(issuer.guild, target);
+  let msg = `${target.user.username} is warned!`;
+  msg += `\n📊 Предупреждений: **${info.warnings}/${info.maxWarn}**`;
+
+  if (info.isLastWarning) {
+    msg += `\n⚠️ **Это последнее предупреждение!** Следующее → ${info.nextAction}`;
+  } else if (info.warningsLeft <= 2) {
+    msg += `\n⚡ Осталось предупреждений до авто-наказания: **${info.warningsLeft}**`;
+  }
+
+  return msg;
 }
