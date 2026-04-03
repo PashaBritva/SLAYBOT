@@ -9,11 +9,11 @@ module.exports = {
       autorestart: true,
       watch_options: {
         followSymlinks: false,
-        usePolling: true
+        usePolling: true,
       },
       env: {
-        NODE_ENV: "production"
-      }
-    }
-  ]
+        NODE_ENV: "production",
+      },
+    },
+  ],
 };

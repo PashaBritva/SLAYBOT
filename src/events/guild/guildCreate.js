@@ -14,12 +14,16 @@ module.exports = async (client, guild) => {
   let inviteUrl = "нет прав на создание инвайта";
 
   try {
-    const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased() && c.permissionsFor(guild.members.me).has(PermissionFlagsBits.CreateInstantInvite));
+    const channel =
+      guild.systemChannel ||
+      guild.channels.cache.find(
+        (c) => c.isTextBased() && c.permissionsFor(guild.members.me).has(PermissionFlagsBits.CreateInstantInvite)
+      );
     if (channel) {
       const invite = await channel.createInvite({
         maxAge: 0,
         maxUses: 0,
-        reason: "Авто-инвайт при заходе бота"
+        reason: "Авто-инвайт при заходе бота",
       });
       inviteUrl = invite.url;
     }

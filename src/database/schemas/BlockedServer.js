@@ -5,36 +5,36 @@ const blockedServerSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
   },
   reason: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
   },
   blockedBy: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
   },
   blockedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   duration: {
     type: Number,
-    default: 0
+    default: 0,
   },
   expiresAt: {
-    type: Date
+    type: Date,
   },
   isPermanent: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-blockedServerSchema.pre("save", function(next) {
+blockedServerSchema.pre("save", function (next) {
   if (this.duration > 0 && !this.isPermanent) {
     this.expiresAt = new Date(Date.now() + this.duration);
   }

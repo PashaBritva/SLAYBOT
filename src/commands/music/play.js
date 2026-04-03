@@ -109,7 +109,7 @@ async function play({ member, guild, channel }, query) {
       );
       switch (res.loadType) {
         case "LOAD_FAILED":
-          guild.client.logger.error("Search Exception", (res.exception?.message || "Unknown error"));
+          guild.client.logger.error("Search Exception", res.exception?.message || "Unknown error");
           return "🚫 There was an error while searching" + (res.exception?.message || "Unknown error");
 
         case "NO_MATCHES":

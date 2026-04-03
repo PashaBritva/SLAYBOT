@@ -67,7 +67,6 @@ module.exports = {
     }
 
     if (level !== statsDb.level) {
-
       statsDb.xp = xp;
       statsDb.level = level;
       let lvlUpMessage = settings.stats.xp.message;

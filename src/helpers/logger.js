@@ -97,7 +97,6 @@ module.exports = class Logger {
     if (webhookLogger) sendWebhook(content, { name: "Error", stack: details, message });
   }
 
-
   /**
    * @param {string} content
    */

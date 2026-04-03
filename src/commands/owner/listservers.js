@@ -48,7 +48,9 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setColor(client.config.EMBED_COLORS.BOT_EMBED)
         .setAuthor({ name: "📋 Список серверов" })
-        .setFooter({ text: `${match ? "Найдено" : "Всего"} серверов: ${total} • Страница ${currentPage}/${totalPages}` });
+        .setFooter({
+          text: `${match ? "Найдено" : "Всего"} серверов: ${total} • Страница ${currentPage}/${totalPages}`,
+        });
 
       let description = "";
       for (let i = start; i < end; i++) {
