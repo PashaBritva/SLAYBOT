@@ -5,7 +5,6 @@ config.js
 package-lock.json
 *.code-workspace
 .vscode
-.github
 docker-compose.yml
 
 # Build artifacts
