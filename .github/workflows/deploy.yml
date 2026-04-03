@@ -89,7 +89,7 @@ jobs:
     if: always()
     steps:
       - name: Send Discord Webhook
-        if: ${{ secrets.DEPLOY_WEBHOOK != '' }}
+        if: ${{ secrets.DEPLOY_WEBHOOK != null }}
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DEPLOY_WEBHOOK }}
