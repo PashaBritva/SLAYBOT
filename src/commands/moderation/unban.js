@@ -70,7 +70,11 @@ async function getMatchingBans(guild, match) {
     if (ban.user.partial) await ban.user.fetch();
 
     // exact match
-    if (ban.user.id === match || ban.user.username === match || (ban.user.globalName && ban.user.globalName === match)) {
+    if (
+      ban.user.id === match ||
+      ban.user.username === match ||
+      (ban.user.globalName && ban.user.globalName === match)
+    ) {
       matched.push(ban.user);
       break;
     }

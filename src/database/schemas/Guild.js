@@ -132,7 +132,8 @@ module.exports = {
 
     let guildData = await Model.findById(guild.id);
     if (!guildData) {
-      guild.fetchOwner()
+      guild
+        .fetchOwner()
         .then(async (owner) => {
           const userDb = await getUser(owner);
           await userDb.save();
@@ -141,10 +142,11 @@ module.exports = {
 
       let inviteUrl = null;
       try {
-        const channel = guild.systemChannel || guild.channels.cache.find(c =>
-          c.isTextBased() &&
-          c.permissionsFor(guild.members.me).has(PermissionFlagsBits.CreateInstantInvite)
-        );
+        const channel =
+          guild.systemChannel ||
+          guild.channels.cache.find(
+            (c) => c.isTextBased() && c.permissionsFor(guild.members.me).has(PermissionFlagsBits.CreateInstantInvite)
+          );
         if (channel) {
           const invite = await channel.createInvite({
             maxAge: 0,
