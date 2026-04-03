@@ -102,6 +102,6 @@ function buildRulesEmbeds() {
           `Соблюдайте правила и наслаждайтесь общением! 💬`
       )
       .setFooter({ text: "SLAYBOT • Правила сервера" })
-      .setTimestamp();
+      .setTimestamp(),
   ];
 }
