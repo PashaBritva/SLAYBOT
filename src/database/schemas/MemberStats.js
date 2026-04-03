@@ -37,7 +37,9 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("member-stats", Schema);
+const Model = mongoose.models["member-stats"]
+  ? mongoose.model("member-stats")
+  : mongoose.model("member-stats", Schema);
 
 module.exports = {
   getMemberStats: async (guildId, memberId) => {

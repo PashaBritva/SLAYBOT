@@ -41,4 +41,6 @@ blockedServerSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("BlockedServer", blockedServerSchema);
+module.exports = mongoose.models["BlockedServer"]
+  ? mongoose.model("BlockedServer")
+  : mongoose.model("BlockedServer", blockedServerSchema);

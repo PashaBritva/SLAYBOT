@@ -22,7 +22,9 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("logs-translation", Schema);
+const Model = mongoose.models["logs-translation"]
+  ? mongoose.model("logs-translation")
+  : mongoose.model("logs-translation", Schema);
 
 module.exports = {
   model: Model,

@@ -26,7 +26,9 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("reaction-roles", Schema);
+const Model = mongoose.models["reaction-roles"]
+  ? mongoose.model("reaction-roles")
+  : mongoose.model("reaction-roles", Schema);
 
 // Cache
 const rrCache = new Map();

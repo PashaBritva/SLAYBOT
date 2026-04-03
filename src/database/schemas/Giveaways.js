@@ -60,5 +60,7 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("giveaways", Schema);
+const Model = mongoose.models["giveaways"]
+  ? mongoose.model("giveaways")
+  : mongoose.model("giveaways", Schema);
 module.exports = Model;

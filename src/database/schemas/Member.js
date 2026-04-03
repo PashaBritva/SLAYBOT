@@ -32,7 +32,9 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.model("members", Schema);
+const Model = mongoose.models["members"]
+  ? mongoose.model("members")
+  : mongoose.model("members", Schema);
 
 module.exports = {
   getMember: async (guildId, memberId) => {
