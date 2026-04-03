@@ -31,4 +31,4 @@ bot-proxy.js
 ss-proxy.js
 
 # Docker
-*.log
+*.logsetup-deploy.sh
