@@ -18,8 +18,6 @@ module.exports = {
 
 function buildRulesEmbeds() {
   const ACCENT = "#5865F2";
-  const WARN = "#FEE75C";
-  const DANGER = "#ED4245";
 
   return [
     // Main rules embed
