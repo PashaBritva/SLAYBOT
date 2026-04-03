@@ -54,10 +54,13 @@ module.exports = {
 async function play({ member, guild, channel }, query) {
   if (!member.voice.channel) return "🚫 You need to join a voice channel first";
 
-  let player = guild.client.musicManager.getPlayer(guild.id);
+  const musicManager = musicManager;
+  if (!musicManager) return "🚫 Music system is not available. Try again later";
+
+  let player = musicManager.getPlayer(guild.id);
   if (player && !guild.members.me.voice.channel) {
     player.disconnect();
-    await guild.client.musicManager.destroyPlayer(guild.id);
+    await musicManager.destroyPlayer(guild.id);
   }
 
   if (player && member.voice.channel !== guild.members.me.voice.channel) {
@@ -69,12 +72,12 @@ async function play({ member, guild, channel }, query) {
   let description = "";
 
   try {
-    if (guild.client.musicManager.spotify.isSpotifyUrl(query)) {
+    if (musicManager.spotify.isSpotifyUrl(query)) {
       if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
         return "🚫 Spotify songs cannot be played. Please contact the bot owner";
       }
 
-      const item = await guild.client.musicManager.spotify.load(query);
+      const item = await musicManager.spotify.load(query);
       switch (item?.type) {
         case SpotifyItemType.Track: {
           const track = await item.resolveYoutubeTrack();
@@ -104,7 +107,7 @@ async function play({ member, guild, channel }, query) {
 
       if (!tracks) guild.client.logger.debug({ query, item });
     } else {
-      const res = await guild.client.musicManager.rest.loadTracks(
+      const res = await musicManager.rest.loadTracks(
         /^https?:\/\//.test(query) ? query : `${search_prefix[MUSIC.DEFAULT_SOURCE]}:${query}`
       );
       switch (res.loadType) {
@@ -194,7 +197,7 @@ async function play({ member, guild, channel }, query) {
 
   // create a player and/or join the member's vc
   if (!player?.connected) {
-    player = guild.client.musicManager.createPlayer(guild.id);
+    player = musicManager.createPlayer(guild.id);
     player.queue.data.channel = channel;
     player.connect(member.voice.channel.id, { deafened: true });
   }

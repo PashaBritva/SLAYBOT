@@ -60,10 +60,13 @@ module.exports = {
 async function search({ member, guild, channel }, query) {
   if (!member.voice.channel) return "🚫 You need to join a voice channel first";
 
-  let player = guild.client.musicManager.getPlayer(guild.id);
+  const musicManager = guild.client.musicManager;
+  if (!musicManager) return "🚫 Music system is not available. Try again later";
+
+  let player = musicManager.getPlayer(guild.id);
   if (player && !guild.members.me.voice.channel) {
     player.disconnect();
-    await guild.client.musicManager.destroyPlayer(guild.id);
+    await musicManager.destroyPlayer(guild.id);
   }
   if (player && member.voice.channel !== guild.members.me.voice.channel) {
     return "🚫 You must be in the same voice channel as mine";
@@ -71,7 +74,7 @@ async function search({ member, guild, channel }, query) {
 
   let res;
   try {
-    res = await guild.client.musicManager.rest.loadTracks(
+    res = await musicManager.rest.loadTracks(
       /^https?:\/\//.test(query) ? query : `${search_prefix[MUSIC.DEFAULT_SOURCE]}:${query}`
     );
   } catch (err) {
@@ -210,7 +213,7 @@ async function search({ member, guild, channel }, query) {
 
   // create a player and/or join the member's vc
   if (!player?.connected) {
-    player = guild.client.musicManager.createPlayer(guild.id);
+    player = musicManager.createPlayer(guild.id);
     player.queue.data.channel = channel;
     player.connect(member.voice.channel.id, { deafened: true });
   }
