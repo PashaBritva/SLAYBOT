@@ -81,22 +81,3 @@ jobs:
           echo "Waiting for bot to start..."
           sleep 10
           echo "✅ Deployment complete!"
-
-  notify:
-    name: 📢 Notify
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: always()
-    steps:
-      - name: Send Discord Webhook
-        if: ${{ secrets.DEPLOY_WEBHOOK != null }}
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DEPLOY_WEBHOOK }}
-          status: ${{ job.status }}
-          title: "🚀 SLAYBOT Deployment"
-          description: |
-            **Branch:** `main`
-            **Commit:** ${{ github.sha }}
-            **Author:** ${{ github.actor }}
-          color: ${{ job.status == 'success' && '0x57F287' || '0xED4245' }}
