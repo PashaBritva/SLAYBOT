@@ -8,27 +8,34 @@ module.exports = {
   slashCommand: { enabled: true, ephemeral: true },
 
   async messageRun(message) {
-    await message.safeReply({ embeds: buildRulesEmbeds() });
+    await message.safeReply({ embeds: [buildRulesEmbed()] });
   },
 
   async interactionRun(interaction) {
-    await interaction.followUp({ embeds: buildRulesEmbeds() });
+    await interaction.followUp({ embeds: [buildRulesEmbed()] });
   },
 };
 
-function buildRulesEmbeds() {
-  const E = "#068ADD";
-  return [
-    new EmbedBuilder().setColor(E).setTitle("🟢 1.1 Уважение").setDescription("Уважайте всех участников. Оскорбления, угрозы и грубость запрещены.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 3ч → 🚫 1 день" }),
-    new EmbedBuilder().setColor(E).setTitle("🌐 1.2 Язык общения").setDescription("Основной язык — русский. Другие языки только в разрешённых каналах.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 1ч → 🔇 6ч" }),
-    new EmbedBuilder().setColor(E).setTitle("🚫 1.3 Запрещённые темы").setDescription("Политика, религия и спорные темы запрещены.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 6ч → 🚫 1 день" }),
-    new EmbedBuilder().setColor(E).setTitle("💬 2.1 Флуд и спам").setDescription("Запрещено флудить и спамить. Поддерживайте тематические обсуждения.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 3ч → 🔇 12ч" }),
-    new EmbedBuilder().setColor(E).setTitle("📢 2.2 Реклама").setDescription("Реклама и самореклама запрещены без разрешения администрации.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 6ч → 🚫 1 день" }),
-    new EmbedBuilder().setColor(E).setTitle("🔞 2.3 NSFW контент").setDescription("Контент для взрослых запрещён в любых каналах.").addFields({ name: "⚖️ Последствия", value: "🔇 6ч → 🚫 3 дня" }),
-    new EmbedBuilder().setColor(E).setTitle("🤖 3.1 Команды бота").setDescription("Используйте команды по назначению. Не злоупотребляйте.").addFields({ name: "⚖️ Последствия", value: "⚠️ → ⏸️ 3ч → ⏸️ 1 день" }),
-    new EmbedBuilder().setColor(E).setTitle("🛡️ 4.1 Уважение к модераторам").setDescription("Уважайте решения модераторов. Оспаривайте корректно в ЛС.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 3ч → 🔇 12ч" }),
-    new EmbedBuilder().setColor(E).setTitle("🔒 5.1 Личные данные").setDescription("Не делитесь личными данными и паролями с другими участниками.").addFields({ name: "⚖️ Последствия", value: "⚠️ → 🔇 6ч → 🚫 3 дня" }),
-    new EmbedBuilder().setColor("#ED4245").setTitle("⛔ 5.2 Фишинг и мошенничество").setDescription("Любой фишинг и мошенничество запрещены.").addFields({ name: "⚖️ Последствия", value: "🚫 Бан 7 дней" }),
-    new EmbedBuilder().setColor(E).setTitle("📝 Дополнительно").setDescription("Администрация может изменять правила. Следите за 📰 `news`.\nНарушение правил ведёт к предупреждению, муту или бану.").setFooter({ text: "Полные правила: RULES.md" }),
-  ];
+function buildRulesEmbed() {
+  return new EmbedBuilder()
+    .setTitle("📜 Правила")
+    .setColor("#068ADD")
+    .setDescription(
+      `1. **Уважайте всех** — оскорбления, угрозы, грубость → ⚠️ / 🔇 / 🚫\n` +
+        `2. **Русский язык** — основной язык сервера → ⚠️ / 🔇\n` +
+        `3. **Без политики и религии** — спорные темы запрещены → ⚠️ / 🔇 / 🚫\n` +
+        `4. **Без спама и флуда** — тематические обсуждения → ⚠️ / 🔇\n` +
+        `5. **Без рекламы** — только с разрешения админа → ⚠️ / 🔇 / 🚫\n` +
+        `6. **Без NSFW** — контент 18+ запрещён → 🔇 / 🚫\n` +
+        `7. **Команды бота по делу** — не злоупотребляйте → ⚠️ / ⏸️\n` +
+        `8. **Уважайте модераторов** — оспаривайте в ЛС → ⚠️ / 🔇\n` +
+        `9. **Не делитесь личными данными** — безопасность превыше всего → ⚠️ / 🔇 / 🚫\n` +
+        `10. **Фишинг и мошенничество** → 🚫 Бан 7 дней\n\n` +
+        `⚠️ — предупреждение\n` +
+        `🔇 — мут (1ч — 12ч)\n` +
+        `⏸️ — блокировка бота (3ч — 1 день)\n` +
+        `🚫 — бан (1 день — 7 дней)`
+    )
+    .setFooter({ text: "Администрация может изменять правила • Следите за 📰 news" })
+    .setTimestamp();
 }
