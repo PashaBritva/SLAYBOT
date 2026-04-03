@@ -37,9 +37,7 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.models["suggestions"]
-  ? mongoose.model("suggestions")
-  : mongoose.model("suggestions", Schema);
+const Model = mongoose.models["suggestions"] ? mongoose.model("suggestions") : mongoose.model("suggestions", Schema);
 
 module.exports = {
   model: Model,

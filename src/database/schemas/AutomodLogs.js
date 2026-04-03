@@ -23,9 +23,7 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.models["automod-logs"]
-  ? mongoose.model("automod-logs")
-  : mongoose.model("automod-logs", Schema);
+const Model = mongoose.models["automod-logs"] ? mongoose.model("automod-logs") : mongoose.model("automod-logs", Schema);
 
 module.exports = {
   addAutoModLogToDb: async (member, content, reason, strikes) => {

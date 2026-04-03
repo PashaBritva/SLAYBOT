@@ -45,9 +45,7 @@ const Schema = new mongoose.Schema(
   }
 );
 
-const Model = mongoose.models["mod-logs"]
-  ? mongoose.model("mod-logs")
-  : mongoose.model("mod-logs", Schema);
+const Model = mongoose.models["mod-logs"] ? mongoose.model("mod-logs") : mongoose.model("mod-logs", Schema);
 
 module.exports = {
   model: Model,
