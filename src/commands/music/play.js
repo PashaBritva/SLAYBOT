@@ -72,12 +72,12 @@ async function play({ member, guild, channel }, query) {
   let description = "";
 
   try {
-    if (musicManager.spotify.isSpotifyUrl(query)) {
+    if (mm.spotify.isSpotifyUrl(query)) {
       if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
         return "🚫 Spotify songs cannot be played. Please contact the bot owner";
       }
 
-      const item = await musicManager.spotify.load(query);
+      const item = await mm.spotify.load(query);
       switch (item?.type) {
         case SpotifyItemType.Track: {
           const track = await item.resolveYoutubeTrack();
@@ -107,7 +107,7 @@ async function play({ member, guild, channel }, query) {
 
       if (!tracks) guild.client.logger.debug({ query, item });
     } else {
-      const res = await musicManager.rest.loadTracks(
+      const res = await mm.rest.loadTracks(
         /^https?:\/\//.test(query) ? query : `${search_prefix[MUSIC.DEFAULT_SOURCE]}:${query}`
       );
       switch (res.loadType) {
@@ -197,7 +197,7 @@ async function play({ member, guild, channel }, query) {
 
   // create a player and/or join the member's vc
   if (!player?.connected) {
-    player = musicManager.createPlayer(guild.id);
+    player = mm.createPlayer(guild.id);
     player.queue.data.channel = channel;
     player.connect(member.voice.channel.id, { deafened: true });
   }
