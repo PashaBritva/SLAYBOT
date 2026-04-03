@@ -54,13 +54,13 @@ module.exports = {
 async function play({ member, guild, channel }, query) {
   if (!member.voice.channel) return "🚫 You need to join a voice channel first";
 
-  const musicManager = musicManager;
-  if (!musicManager) return "🚫 Music system is not available. Try again later";
+  const mm = guild.client.musicManager;
+  if (!mm) return "🚫 Music system is not available. Try again later";
 
-  let player = musicManager.getPlayer(guild.id);
+  let player = mm.getPlayer(guild.id);
   if (player && !guild.members.me.voice.channel) {
     player.disconnect();
-    await musicManager.destroyPlayer(guild.id);
+    await mm.destroyPlayer(guild.id);
   }
 
   if (player && member.voice.channel !== guild.members.me.voice.channel) {
