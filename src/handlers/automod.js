@@ -200,7 +200,7 @@ async function performAutomod(message, settings) {
       );
 
     author.send({ embeds: [strikeEmbed] }).catch((ex) => {
-      client.logger.debug("Failed to send automod DM to user", ex);
+      message.client.logger.debug("Failed to send automod DM to user", ex);
     });
 
     // check if max strikes are received
