@@ -13,7 +13,7 @@ async function updateCounterChannels(client) {
       const settings = await getSettings(guild);
 
       const all = guild.memberCount;
-      const bots = settings.data.bots;
+      const bots = settings.data.bots || 0;
       const members = all - bots;
 
       for (const config of settings.counters) {

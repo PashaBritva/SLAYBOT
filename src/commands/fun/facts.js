@@ -59,7 +59,7 @@ async function getFact(user, choice) {
     .setColor(EMBED_COLORS.TRANSPARENT)
     .setThumbnail(imageUrl)
     .setDescription(fact)
-    .setFooter({ text: `Requested by ${user.tag}` });
+    .setFooter({ text: `Requested by ${user.username}` });
 
   return { embeds: [embed] };
 }

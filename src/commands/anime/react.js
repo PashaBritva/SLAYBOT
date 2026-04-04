@@ -69,11 +69,11 @@ const genReaction = async (category, user) => {
     return new EmbedBuilder()
       .setImage(imageUrl)
       .setColor("Random")
-      .setFooter({ text: `Requested By ${user.tag}` });
+      .setFooter({ text: `Requested By ${user.username}` });
   } catch (ex) {
     return new EmbedBuilder()
       .setColor(EMBED_COLORS.ERROR)
       .setDescription("Failed to fetch meme. Try again!")
-      .setFooter({ text: `Requested By ${user.tag}` });
+      .setFooter({ text: `Requested By ${user.username}` });
   }
 };

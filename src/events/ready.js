@@ -24,8 +24,12 @@ module.exports = async (client) => {
 
   // Register Interactions
   if (client.config.INTERACTIONS.SLASH || client.config.INTERACTIONS.CONTEXT) {
-    if (client.config.INTERACTIONS.GLOBAL) await client.registerInteractions();
-    else await client.registerInteractions(client.config.INTERACTIONS.TEST_GUILD_ID);
+    try {
+      if (client.config.INTERACTIONS.GLOBAL) await client.registerInteractions();
+      else await client.registerInteractions(client.config.INTERACTIONS.TEST_GUILD_ID);
+    } catch (ex) {
+      client.logger.error("Failed to register interactions", ex);
+    }
   }
 
   // Load reaction roles to cache

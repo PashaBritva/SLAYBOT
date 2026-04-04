@@ -303,7 +303,7 @@ module.exports = class ModUtils {
     if (!memberInteract(issuer.guild.members.me, target)) return "BOT_PERM";
 
     try {
-      logModeration(issuer, target, reason, "Warn");
+      await logModeration(issuer, target, reason, "Warn");
       const memberDb = await getMember(issuer.guild.id, target.id);
       memberDb.warnings += 1;
       const settings = await getSettings(issuer.guild);
@@ -336,7 +336,7 @@ module.exports = class ModUtils {
 
     try {
       await target.timeout(ms, reason);
-      logModeration(issuer, target, reason, "Timeout");
+      await logModeration(issuer, target, reason, "Timeout");
       return true;
     } catch (ex) {
       error("timeoutTarget", ex);
@@ -357,7 +357,7 @@ module.exports = class ModUtils {
 
     try {
       await target.timeout(null, reason);
-      logModeration(issuer, target, reason, "UnTimeout");
+      await logModeration(issuer, target, reason, "UnTimeout");
       return true;
     } catch (ex) {
       error("unTimeoutTarget", ex);
@@ -377,7 +377,7 @@ module.exports = class ModUtils {
 
     try {
       await target.kick(reason);
-      logModeration(issuer, target, reason, "Kick");
+      await logModeration(issuer, target, reason, "Kick");
       return true;
     } catch (ex) {
       error("kickTarget", ex);
@@ -398,7 +398,7 @@ module.exports = class ModUtils {
     try {
       await target.ban({ deleteMessageSeconds: 7 * 24 * 60 * 60, reason });
       await issuer.guild.members.unban(target.user);
-      logModeration(issuer, target, reason, "Softban");
+      await logModeration(issuer, target, reason, "Softban");
       return true;
     } catch (ex) {
       error("softbanTarget", ex);
@@ -420,7 +420,7 @@ module.exports = class ModUtils {
 
     try {
       await issuer.guild.bans.create(target.id, { deleteMessageSeconds: 0, reason });
-      logModeration(issuer, target, reason, "Ban");
+      await logModeration(issuer, target, reason, "Ban");
       return true;
     } catch (ex) {
       error(`banTarget`, ex);
@@ -437,7 +437,7 @@ module.exports = class ModUtils {
   static async unBanTarget(issuer, target, reason) {
     try {
       await issuer.guild.bans.remove(target, reason);
-      logModeration(issuer, target, reason, "UnBan");
+      await logModeration(issuer, target, reason, "UnBan");
       return true;
     } catch (ex) {
       error(`unBanTarget`, ex);
@@ -460,7 +460,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setMute(true, reason);
-      logModeration(issuer, target, reason, "Vmute");
+      await logModeration(issuer, target, reason, "Vmute");
       return true;
     } catch (ex) {
       error(`vMuteTarget`, ex);
@@ -483,7 +483,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setMute(false, reason);
-      logModeration(issuer, target, reason, "Vunmute");
+      await logModeration(issuer, target, reason, "Vunmute");
       return true;
     } catch (ex) {
       error(`vUnmuteTarget`, ex);
@@ -506,11 +506,10 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setDeaf(true, reason);
-      logModeration(issuer, target, reason, "Deafen");
+      await logModeration(issuer, target, reason, "Deafen");
       return true;
     } catch (ex) {
-      error(`deafenTarget`, ex);
-      return "ERROR";
+      return `Failed to deafen ${target.user.globalName || target.user.username}`;
     }
   }
 
@@ -529,7 +528,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setDeaf(false, reason);
-      logModeration(issuer, target, reason, "unDeafen");
+      await logModeration(issuer, target, reason, "unDeafen");
       return true;
     } catch (ex) {
       error(`unDeafenTarget`, ex);
@@ -551,7 +550,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.disconnect(reason);
-      logModeration(issuer, target, reason, "Disconnect");
+      await logModeration(issuer, target, reason, "Disconnect");
       return true;
     } catch (ex) {
       error(`disconnectTarget`, ex);
@@ -577,7 +576,7 @@ module.exports = class ModUtils {
 
     try {
       await target.voice.setChannel(channel, reason);
-      logModeration(issuer, target, reason, "Move", { channel });
+      await logModeration(issuer, target, reason, "Move", { channel });
       return true;
     } catch (ex) {
       error(`moveTarget`, ex);

@@ -199,7 +199,9 @@ async function performAutomod(message, settings) {
           `**Total Strikes:** ${memberDb.strikes} out of ${automod.strikes}`
       );
 
-    author.send({ embeds: [strikeEmbed] }).catch((ex) => {});
+    author.send({ embeds: [strikeEmbed] }).catch((ex) => {
+      client.logger.debug("Failed to send automod DM to user", ex);
+    });
 
     // check if max strikes are received
     if (memberDb.strikes >= automod.strikes) {
@@ -207,7 +209,9 @@ async function performAutomod(message, settings) {
       memberDb.strikes = 0;
 
       // Add Moderation Action
-      await addModAction(guild.members.me, member, "Automod: Max strikes received", automod.action).catch(() => {});
+      await addModAction(guild.members.me, member, "Automod: Max strikes received", automod.action).catch((ex) => {
+        guild.client.logger.error("Automod action failed", ex);
+      });
     }
 
     await memberDb.save();

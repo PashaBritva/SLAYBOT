@@ -8,7 +8,8 @@ const moment = require("moment");
 module.exports = async (guild) => {
   const { name, id, preferredLocale, channels, roles, ownerId } = guild;
 
-  const owner = await guild.members.fetch(ownerId);
+  const owner = await guild.members.fetch(ownerId).catch(() => null);
+  const ownerName = owner ? owner.user.username : "Unknown#0000";
   const createdAt = moment(guild.createdAt);
 
   const totalChannels = channels.cache.size;
@@ -56,9 +57,10 @@ module.exports = async (guild) => {
   }
 
   let desc = "";
+  desc = `${desc + "❯"} **Server Information**\n`;
   desc = `${desc + "❯"} **Id:** ${id}\n`;
   desc = `${desc + "❯"} **Name:** ${name}\n`;
-  desc = `${desc + "❯"} **Owner:** ${owner.user.username}\n`;
+  desc = `${desc + "❯"} **Owner:** ${ownerName}\n`;
   desc = `${desc + "❯"} **Region:** ${preferredLocale}\n`;
   desc += "\n";
 
