@@ -63,7 +63,7 @@ module.exports = {
         const inviteUrl = settings?.inviteUrl ? settings.inviteUrl : settings.data.inviteUrl;
 
         description += `**${server.name}** \`(${server.id})\`\n`;
-        description += `👑 ${owner ? owner.tag : server.ownerId}\n`;
+        description += `👑 ${owner ? owner.username : server.ownerId}\n`;
         description += `👥 ${server.memberCount} (ботов: ${botsCount})\n`;
         description += `📅 <t:${Math.floor(server.createdTimestamp / 1000)}:d>\n`;
         if (inviteUrl) description += `🔗 ${inviteUrl}\n`;

@@ -56,7 +56,7 @@ async function getAnimal(user, choice) {
   const embed = new EmbedBuilder()
     .setColor(EMBED_COLORS.TRANSPARENT)
     .setImage(imageUrl)
-    .setFooter({ text: `Requested by ${user.tag}` });
+    .setFooter({ text: `Requested by ${user.username}` });
 
   return { embeds: [embed] };
 }

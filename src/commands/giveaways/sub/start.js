@@ -16,7 +16,7 @@ module.exports = async (member, giveawayChannel, duration, prize, winners, host,
       return "You need to have the manage messages permissions to start giveaways.";
     }
 
-    if (!giveawayChannel.type === ChannelType.GuildText) {
+    if (giveawayChannel.type !== ChannelType.GuildText) {
       return "You can only start giveaways in text channels.";
     }
 

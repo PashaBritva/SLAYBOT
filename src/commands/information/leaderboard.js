@@ -88,7 +88,7 @@ async function getXpLeaderboard({ guild }, author, settings) {
   for (let i = 0; i < lb.length; i++) {
     try {
       const user = await author.client.users.fetch(lb[i].member_id);
-      collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.tag)}\n`;
+      collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.username)}\n`;
     } catch (ex) {
       // Ignore
     }
@@ -98,7 +98,7 @@ async function getXpLeaderboard({ guild }, author, settings) {
     .setAuthor({ name: "XP Leaderboard" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(collector)
-    .setFooter({ text: `Requested by ${author.tag}` });
+    .setFooter({ text: `Requested by ${author.username}` });
 
   return { embeds: [embed] };
 }
@@ -116,10 +116,10 @@ async function getInviteLeaderboard({ guild }, author, settings) {
       if (memberId === "VANITY") collector += `**#${(i + 1).toString()}** - Vanity URL [${lb[i].invites}]\n`;
       else {
         const user = await author.client.users.fetch(lb[i].member_id);
-        collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.tag)} [${lb[i].invites}]\n`;
+        collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.username)} [${lb[i].invites}]\n`;
       }
     } catch (ex) {
-      collector += `**#${(i + 1).toString()}** - DeletedUser#0000 [${lb[i].invites}]\n`;
+      collector += `**#${(i + 1).toString()}** - DeletedUser [${lb[i].invites}]\n`;
     }
   }
 
@@ -127,7 +127,7 @@ async function getInviteLeaderboard({ guild }, author, settings) {
     .setAuthor({ name: "Invite Leaderboard" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(collector)
-    .setFooter({ text: `Requested by ${author.tag}` });
+    .setFooter({ text: `Requested by ${author.username}` });
 
   return { embeds: [embed] };
 }
@@ -140,9 +140,9 @@ async function getRepLeaderboard(author) {
   for (let i = 0; i < lb.length; i++) {
     try {
       const user = await author.client.users.fetch(lb[i]._id);
-      collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.tag)} [${lb[i].reputation.received}]\n`;
+      collector += `**#${(i + 1).toString()}** - ${escapeInlineCode(user.username)} [${lb[i].reputation.received}]\n`;
     } catch (ex) {
-      collector += `**#${(i + 1).toString()}** - DeletedUser#0000 [${lb[i].reputation.received}]\n`;
+      collector += `**#${(i + 1).toString()}** - DeletedUser [${lb[i].reputation.received}]\n`;
     }
   }
 
@@ -150,7 +150,7 @@ async function getRepLeaderboard(author) {
     .setAuthor({ name: "Reputation Leaderboard" })
     .setColor(EMBED_COLORS.BOT_EMBED)
     .setDescription(collector)
-    .setFooter({ text: `Requested by ${author.tag}` });
+    .setFooter({ text: `Requested by ${author.username}` });
 
   return { embeds: [embed] };
 }

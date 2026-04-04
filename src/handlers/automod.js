@@ -120,7 +120,7 @@ async function performAutomod(message, settings) {
   }
 
   // Anti Spam
-  if (!automod.anti_links && automod.anti_spam) {
+  if (automod.anti_spam) {
     if (containsLink(content)) {
       const key = author.id + "|" + message.guildId;
       if (antispamCache.has(key)) {
@@ -146,7 +146,7 @@ async function performAutomod(message, settings) {
   }
 
   // Anti Invites
-  if (!automod.anti_links && automod.anti_invites) {
+  if (automod.anti_invites) {
     if (containsDiscordInvite(content)) {
       fields.push({ name: "Discord Invites", value: "✓", inline: true });
       shouldDelete = true;
@@ -199,7 +199,9 @@ async function performAutomod(message, settings) {
           `**Total Strikes:** ${memberDb.strikes} out of ${automod.strikes}`
       );
 
-    author.send({ embeds: [strikeEmbed] }).catch((ex) => {});
+    author.send({ embeds: [strikeEmbed] }).catch((ex) => {
+      message.client.logger.debug("Failed to send automod DM to user", ex);
+    });
 
     // check if max strikes are received
     if (memberDb.strikes >= automod.strikes) {
@@ -207,7 +209,9 @@ async function performAutomod(message, settings) {
       memberDb.strikes = 0;
 
       // Add Moderation Action
-      await addModAction(guild.members.me, member, "Automod: Max strikes received", automod.action).catch(() => {});
+      await addModAction(guild.members.me, member, "Automod: Max strikes received", automod.action).catch((ex) => {
+        guild.client.logger.error("Automod action failed", ex);
+      });
     }
 
     await memberDb.save();

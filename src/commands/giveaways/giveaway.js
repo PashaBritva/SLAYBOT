@@ -295,7 +295,7 @@ async function runModalSetup({ member, channel, guild }, targetCh) {
 
   // validate channel perms
   if (!targetCh) return channel.safeSend("Giveaway setup has been cancelled. You did not mention a channel");
-  if (!targetCh.type === ChannelType.GuildText && !targetCh.permissionsFor(guild.members.me).has(SETUP_PERMS)) {
+  if (targetCh.type !== ChannelType.GuildText && !targetCh.permissionsFor(guild.members.me).has(SETUP_PERMS)) {
     return channel.safeSend(
       `Giveaway setup has been cancelled.\nI need ${parsePermissions(SETUP_PERMS)} in ${targetCh}`
     );
@@ -318,7 +318,9 @@ async function runModalSetup({ member, channel, guild }, targetCh) {
       filter: (i) => i.customId === "giveaway_btnSetup" && i.member.id === member.id && i.message.id === sentMsg.id,
       time: 20000,
     })
-    .catch((ex) => {});
+    .catch((ex) => {
+      channel.client.logger.error("Button interaction timeout", ex);
+    });
 
   if (!btnInteraction) return sentMsg.edit({ content: "No response received, cancelling setup", components: [] });
 
@@ -374,7 +376,9 @@ async function runModalSetup({ member, channel, guild }, targetCh) {
       time: 1 * 60 * 1000,
       filter: (m) => m.customId === "giveaway-modalSetup" && m.member.id === member.id && m.message.id === sentMsg.id,
     })
-    .catch((ex) => {});
+    .catch((ex) => {
+      channel.client.logger.error("Button interaction timeout", ex);
+    });
 
   if (!modal) return sentMsg.edit({ content: "No response received, cancelling setup", components: [] });
 
@@ -437,7 +441,9 @@ async function runModalEdit(message, messageId) {
       filter: (i) => i.customId === "giveaway_btnEdit" && i.member.id === member.id && i.message.id === sentMsg.id,
       time: 20000,
     })
-    .catch((ex) => {});
+    .catch((ex) => {
+      channel.client.logger.error("Button interaction timeout", ex);
+    });
 
   if (!btnInteraction) return sentMsg.edit({ content: "No response received, cancelling update", components: [] });
 
@@ -479,7 +485,9 @@ async function runModalEdit(message, messageId) {
       time: 1 * 60 * 1000,
       filter: (m) => m.customId === "giveaway-modalEdit" && m.member.id === member.id && m.message.id === sentMsg.id,
     })
-    .catch((ex) => {});
+    .catch((ex) => {
+      channel.client.logger.error("Button interaction timeout", ex);
+    });
 
   if (!modal) return sentMsg.edit({ content: "No response received, cancelling update", components: [] });
 
