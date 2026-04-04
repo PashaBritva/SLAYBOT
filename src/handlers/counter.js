@@ -32,7 +32,7 @@ async function updateCounterChannels(client) {
       client.logger.error(`Error updating counter channels for guildId: ${guildId}`, ex);
     } finally {
       // remove guildId from cache
-      const i = client.counterUpdateQueue.indexOf(guild.id);
+      const i = client.counterUpdateQueue.indexOf(guildId);
       if (i > -1) client.counterUpdateQueue.splice(i, 1);
     }
   });

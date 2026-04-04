@@ -295,7 +295,7 @@ async function runModalSetup({ member, channel, guild }, targetCh) {
 
   // validate channel perms
   if (!targetCh) return channel.safeSend("Giveaway setup has been cancelled. You did not mention a channel");
-  if (!targetCh.type === ChannelType.GuildText && !targetCh.permissionsFor(guild.members.me).has(SETUP_PERMS)) {
+  if (targetCh.type !== ChannelType.GuildText && !targetCh.permissionsFor(guild.members.me).has(SETUP_PERMS)) {
     return channel.safeSend(
       `Giveaway setup has been cancelled.\nI need ${parsePermissions(SETUP_PERMS)} in ${targetCh}`
     );

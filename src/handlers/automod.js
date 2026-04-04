@@ -120,7 +120,7 @@ async function performAutomod(message, settings) {
   }
 
   // Anti Spam
-  if (!automod.anti_links && automod.anti_spam) {
+  if (automod.anti_spam) {
     if (containsLink(content)) {
       const key = author.id + "|" + message.guildId;
       if (antispamCache.has(key)) {
@@ -146,7 +146,7 @@ async function performAutomod(message, settings) {
   }
 
   // Anti Invites
-  if (!automod.anti_links && automod.anti_invites) {
+  if (automod.anti_invites) {
     if (containsDiscordInvite(content)) {
       fields.push({ name: "Discord Invites", value: "✓", inline: true });
       shouldDelete = true;
